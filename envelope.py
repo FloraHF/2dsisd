@@ -2,17 +2,34 @@ import os
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np 
-from math import pi, sin, cos, sqrt, asin, acos, atan2
+from math import pi, sin, cos, tan, sqrt, asin, acos, atan2
 
 from Config import Config
 from coords import xy_to_s
-from strategy import get_Q, get_phi, get_psi
 from RK4 import rk4, rk4_fxt_interval
 vd = Config.VD
 vi = Config.VI
 r = Config.CAP_RANGE
 a = vd/vi
 w = 1/a
+
+def get_Q(s):
+	return sqrt(1 + w**2 + 2*w*sin(s))
+
+def get_phi(s):
+	Q = get_Q(s)
+	cphi = w*cos(s)/Q 
+	sphi = -(1 + w*sin(s))/Q
+	return atan2(sphi, cphi)
+
+def get_psi(s):
+	Q = get_Q(s)
+	cpsi = cos(s)/Q 
+	spsi = -(w + sin(s))/Q
+	return atan2(spsi, cpsi)
+
+def mirror(xy, k):
+	return np.array([2*k*xy[1] + xy[0]*(1-k**2), 2*k*xy[0] - xy[1]*(1-k**2)])/(1+k**2)
 
 def dt_ds(s, t):
 	return -r*get_Q(s)/((1. - w**2)*vd)
@@ -72,7 +89,7 @@ def envelope_rotate(s, t, delta=0):
 def envelope_6d(s, t, gmm=acos(1/w), D=0, delta=0):
 	# input t is the total time
 	ub = gmm - acos(1/w)
-	assert delta < ub
+	assert delta <= ub
 	tc = get_time(s)
 	ts = t-tc
 	if ts < 0:
@@ -97,7 +114,7 @@ def envelope_6d(s, t, gmm=acos(1/w), D=0, delta=0):
 	yd2 = (vd*t + r)*sin(beta)
 	xyd2 = np.array([xd2, yd2])
 
-	return np.concatenate((xyd1, xyi, xyd2))
+	return xyd1, xyi, xyd2
 
 def envelope_traj(S, T, gmm, D, delta, n=50):
 
@@ -105,18 +122,28 @@ def envelope_traj(S, T, gmm, D, delta, n=50):
 	nc = max(int(n*tc/(T + tc)), 1) # n for on curved traj
 	ns = n - nc # n for on straight traj
 
-	xs = []
+	xs1 = []
+	if delta > 0 or S > -asin(1/w):
+		xs2 = []
+	k = tan(D + pi/2)
 	for s in np.linspace(-asin(1/w), S, nc):
-		x = envelope_6d(s, get_time(s), gmm=gmm, D=D, delta=delta)
-		xs.append(x)
+		xyd1, xyi, xyd2 = envelope_6d(s, get_time(s), gmm=gmm, D=D, delta=delta)
+		xs1.append(np.concatenate((xyd1, xyi, xyd2)))
+		if delta > 0 or S > -asin(1/w):
+			xs2.append(np.concatenate((mirror(xyd2, k), mirror(xyi, k), mirror(xyd1, k))))
 		# print(x)
 	for t in np.linspace(0.1, T, ns):
-		x = envelope_6d(s, tc+t, gmm=gmm, D=D, delta=delta)
-		xs.append(x)
+		xyd1, xyi, xyd2 = envelope_6d(s, tc+t, gmm=gmm, D=D, delta=delta)
+		xs1.append(np.concatenate((xyd1, xyi, xyd2)))
+		if delta > 0 or S > -asin(1/w):
+			xs2.append(np.concatenate((mirror(xyd2, k), mirror(xyi, k), mirror(xyd1, k))))
 		# print(x)
-	xs = np.asarray(xs)
-
-	return xs[::-1] # forward in time!!!
+	xs1 = np.asarray(xs1)
+	if delta > 0 and S > -asin(1/w):
+		xs2 = np.asarray(xs2)
+		return xs1[::-1], xs2[::-1] # forward in time!!!
+	else:
+		return xs1[::-1], None
 
 def envelope_policy(xs):
 	policy = []
@@ -125,7 +152,7 @@ def envelope_policy(xs):
 		phi_2 = atan2(x_[5]-x[5], x_[4]-x[4])
 		psi = atan2(x_[3]-x[3], x_[2]-x[2])
 		policy.append([phi_1, psi, phi_2])
-		print(policy[-1])
+		# print(policy[-1])
 	policy.append(policy[-1])
 
 	return np.asarray(policy)
@@ -135,14 +162,14 @@ def envelope_policy(xs):
 
 if __name__ == '__main__':
 
-	xs = envelope_traj(0.3, 4., acos(1/w)+0.2, 0.2, 0.2)
-	envelope_policy(xs)
+	xs1, xs2 = envelope_traj(0.3, 4., acos(1/w)+0.2, 0.2, 0.2)
+	envelope_policy(xs2)
 
 	fig = plt.figure()
 	ax = fig.add_subplot(111)
-	ax.plot(xs[:,0], xs[:,1])
-	ax.plot(xs[:,2], xs[:,3])
-	ax.plot(xs[:,4], xs[:,5])
+	ax.plot(xs2[:,0], xs2[:,1])
+	ax.plot(xs2[:,2], xs2[:,3])
+	ax.plot(xs2[:,4], xs2[:,5])
 	ax.axis('equal')
 	ax.grid()
 	plt.show()

@@ -27,9 +27,10 @@ class Config(object):
     TARGET_UPDATE_INTERVAL = 1
 
     ###============ saving params =========
-    DATA_FILE = 'valueData.csv'
-    MODEL_DIR = 'models/'
-    MODEL_FILE = 'valueFn'
+    # DATA_FILE = 'BarrierData.csv'
+    # MODEL_DIR = 'models/'
+    BARRIER_DIR = 'BarrierFn'
+    POLICY_DIR = 'PolicyFn'
 
     SAVE_FREQUENCY = 100
     PRINTING_FREQUENCY = 50
