@@ -8,7 +8,7 @@ from Config import Config
 from coords import xy_to_s
 from RK4 import rk4, rk4_fxt_interval
 vd = Config.VD
-vi = Config.VI
+vi = Config.VI_FAST
 r = Config.CAP_RANGE
 a = vd/vi
 w = 1/a

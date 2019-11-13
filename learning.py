@@ -9,7 +9,7 @@ from tensorflow.keras.models import load_model
 
 from Config import Config
 from envelope import envelope_traj, envelope_policy
-w = Config.VI/Config.VD
+w = Config.VI_FAST/Config.VD
 
 def network(n_in, ns, act_fns):
 	model = Sequential()
@@ -144,31 +144,21 @@ def get_barrier_xi(xis, xd1=-3., yd1=3., xd2=-3., yd2=3., dir=Config.BARRIER_DIR
 def learn_policy(n_gmm,
 				  ns=[20, 20, 1], 
 				  act_fns=[tf.nn.relu, tf.nn.relu, None],
-				  batch_size=5000,
+				  batch_size=3000,
 				  epochs=2000, 
 				  save_dir=Config.POLICY_DIR):
 
 	model = network(6, ns, act_fns)
 	xys, ps, n = sample_policy(n_gmm)
 	model.fit(xys, ps[:,0], batch_size=batch_size, epochs=epochs)
-	model.save(save_dir+'_D1')
+	model.save(save_dir+'_D0')
 	model.fit(xys, ps[:,1], batch_size=batch_size, epochs=epochs)
-	model.save(save_dir+'_I')
+	model.save(save_dir+'_I0')
 	model.fit(xys, ps[:,2], batch_size=batch_size, epochs=epochs)
-	model.save(save_dir+'_D2')
+	model.save(save_dir+'_D1')
 
 
 if __name__ == '__main__':
 	
-	learn_policy(10)
-
-	# xis = np.linspace(-8., 8., 200)
-	# yis = get_barrier_xi(xis)
-
-	# fig, ax = plt.subplots()
-	# ax.plot(xis, yis)
-	# ax.axis('equal')
-	# ax.grid()
-	# plt.show()
-
+	learn_policy(8)
 

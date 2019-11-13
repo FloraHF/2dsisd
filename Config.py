@@ -7,14 +7,16 @@ class Config(object):
     ###============ player params =========
     CAP_RANGE = 2.
     VD = 1.
-    VI = 1.5
+    VI_FAST = 1.5
+    VI_SLOW = .8
     TAG_RANGE = 5.
     
     TIME_STEP = 0.1
     
     ##========= target =========
 
-    x0 = [np.array([0., 2.*CAP_RANGE+TAG_RANGE]), (1.99*CAP_RANGE+TAG_RANGE)*np.array([sin(pi/4), cos(pi/4)])]
+    XI0 = [np.array([0, 5.])]
+    XD0 = [np.array([-3., 3.]), np.array([3., 3.])]
 
     ###============ learning params =========
     LEARNING_RATE = 0.01
