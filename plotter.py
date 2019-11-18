@@ -2,23 +2,22 @@ import matplotlib.pyplot as plt
 import numpy as np
 from math import pi, sin, cos
 
-from Config import Config
 from geometries import dominant_region
 from strategies_fastD import depth_in_target
 
 class Plotter(object):
 	"""docstring for Plotter"""
-	def __init__(self, target, a):
+	def __init__(self, target, a, r):
 
 		self.fig, self.ax = plt.subplots()
-		self.linestyles = {'play': (0, ()), 'ref':(0, (5, 5))}
-		self.colors = {'D0': 'g', 'I': 'r', 'D1': 'b'}
+		self.linestyles = {'play': (0, ()), 'ref':(0, (6, 3)), 'exp':(0, (3, 1))}
+		self.colors = {'D0': 'g', 'I0': 'r', 'D1': 'b'}
 		self.target_specs = {'line':(0, ()), 'color':'k'}
 		self.dcontour_specs = {'line':(0, ()), 'color':'k'}
-		self.xlim = [-Config.CAP_RANGE, Config.CAP_RANGE]
-		self.ylim = [-Config.CAP_RANGE, Config.CAP_RANGE]
+		self.xlim = [-r, r]
+		self.ylim = [-r, r]
 
-		self.r = Config.CAP_RANGE
+		self.r = r
 		self.a = a
 		self.target = target
 
@@ -39,7 +38,7 @@ class Plotter(object):
 		if self.target.__name__ == 'line':
 			kx, ky = 2.5, 1.
 		else:
-			kx, ky = 1.1*Config.TAG_RANGE/Config.CAP_RANGE, 1.1*Config.TAG_RANGE/Config.CAP_RANGE
+			kx, ky = 3., 3.
 		tgt = self.get_data(self.target, kx=kx, ky=ky)
 		CT = self.ax.contour(tgt['X'], tgt['Y'], tgt['data'], [0], linestyles=(self.target_specs['line'],))
 		plt.contour(CT, levels = [0], colors=(self.target_specs['color'],), linestyles=(self.target_specs['line'],))
@@ -66,9 +65,9 @@ class Plotter(object):
 	    # dr unioned
 		dr = self.get_data(get_dr, midx=xi[0], midy=xi[1], kx=k, ky=k)
 		CD = self.ax.contour(dr['X'], dr['Y'], dr['data'], [0], linestyles='solid')
-		plt.contour(CD, levels = [0], colors=(self.colors['I'],), linestyles=('solid',))
+		plt.contour(CD, levels = [0], colors=(self.colors['I0'],), linestyles=('solid',))
 		# locations of players
-		self.ax.plot(xi[0], xi[1], '.', color=self.colors['I'])
+		self.ax.plot(xi[0], xi[1], '.', color=self.colors['I0'])
 		for p, c in self.colors.items():
 			if 'D' in p:
 				i = int(p[-1])
@@ -111,26 +110,20 @@ class Plotter(object):
 	def plot(self, xs):
 		self.plot_target()
 		for situ, x in xs.items():
-			dim = x.shape[-1]
-			_p = None
-			for i, (p, c) in zip([2, 4, 6], self.colors.items()):
-				if i <= dim:
-					self.plot_traj(p, situ, x[:,i-2:i])
-					if 'D' in p:
-						self.plot_capture_ring(p, situ, x[-1,i-2:i])
-						self.plot_capture_ring(p, situ, x[0,i-2:i])
-					if i >= 4 and situ=='play':
-						self.plot_connect(_p, p, x[:,i-4:i-2], x[:,i-2:i])
-				_p = p
+			for i, xi in enumerate(x[0]):
+				self.plot_traj('I'+str(i), situ, xi)
+			for d, xd in enumerate(x[1]):
+				p = 'D'+str(d)
+				self.plot_traj(p, situ, xd)
+				self.plot_capture_ring(p, situ, xd[-1, :])
+			if situ == 'play':
+				self.plot_connect('I0', 'D0', x[0][0], x[1][0])
+				self.plot_connect('I0', 'D1', x[0][0], x[1][1])
 
-		x = xs['play'][0]
-		xi0 = x[2:4]
-		xd0s = []
-		for i in [2, 6]:
-			if i<len(x)+1:
-				xd0s.append(x[i-2:i])
-		self.plot_dr(xi0, xd0s, ind=True)
-		self.plot_dcontour(xi0, xd0s)
+		# xi0 = xs['play'][0][0][0, :]
+		# xd0s = [xd[0, :] for xd in xs['play'][1]]
+		# self.plot_dr(xi0, xd0s, ind=True)
+		# self.plot_dcontour(xi0, xd0s)
 
 		self.show_plot()
 
