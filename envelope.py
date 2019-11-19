@@ -4,12 +4,19 @@ from mpl_toolkits.mplot3d import Axes3D
 import numpy as np 
 from math import pi, sin, cos, tan, sqrt, asin, acos, atan2
 
-from Config import Config
-from coords import xy_to_s
 from RK4 import rk4, rk4_fxt_interval
-vd = Config.VD
-vi = Config.VI_FAST
-r = Config.CAP_RANGE
+
+# info_dir = 'init1/'
+dirc = os.path.dirname(__file__)
+with open(dirc+'/info_slowD.csv', 'r') as f:
+	data = f.readlines()
+	for line in data:
+		if 'vd' in line:
+			vd = float(line.split(',')[-1])
+		if 'vi' in line:
+			vi = float(line.split(',')[-1])
+		if 'rc' in line:
+			r = float(line.split(',')[-1])
 a = vd/vi
 w = 1/a
 
@@ -54,7 +61,6 @@ def envelope_core(s):
 	yd = - A*cos(s)/w + A*s 
 	xi =   A*sin(s)*w 
 	yi = - A*cos(s)*w + A*s
-
 	return xd, yd, xi, yi
 
 def envelope_analytic(s, t, s0=-asin(1/w)):
@@ -73,7 +79,6 @@ def envelope_analytic(s, t, s0=-asin(1/w)):
 		yd = yd - vyd*t
 		xi = xi - vxi*t
 		yi = yi - vyi*t
-
 	return xd, yd, xi, yi
 
 def envelope_rotate(s, t, delta=0):
@@ -121,7 +126,6 @@ def envelope_traj(S, T, gmm, D, delta, n=50):
 	tc = get_time(S) # time on curved traj
 	nc = max(int(n*tc/(T + tc)), 1) # n for on curved traj
 	ns = n - nc # n for on straight traj
-
 	xs1 = []
 	if delta > 0 or S > -asin(1/w):
 		xs2 = []
@@ -154,22 +158,38 @@ def envelope_policy(xs):
 		policy.append([phi_1, psi, phi_2])
 		# print(policy[-1])
 	policy.append(policy[-1])
-
 	return np.asarray(policy)
 
-# def envelope_for_value(s0):
-# 	return envelope_analytic(-asin(1/w), s0=s0)[-1]
 
-if __name__ == '__main__':
 
-	xs1, xs2 = envelope_traj(0.3, 4., acos(1/w)+0.2, 0.2, 0.2)
-	envelope_policy(xs2)
+# # def envelope_for_value(s0):
 
-	fig = plt.figure()
-	ax = fig.add_subplot(111)
-	ax.plot(xs2[:,0], xs2[:,1])
-	ax.plot(xs2[:,2], xs2[:,3])
-	ax.plot(xs2[:,4], xs2[:,5])
-	ax.axis('equal')
-	ax.grid()
-	plt.show()
+# # 	return envelope_analytic(-asin(1/w), s0=s0)[-1]
+
+
+
+# if __name__ == '__main__':
+
+
+
+# 	xs1, xs2 = envelope_traj(0.3, 4., acos(1/w)+0.2, 0.2, 0.2)
+
+# 	envelope_policy(xs2)
+
+
+
+# 	fig = plt.figure()
+
+# 	ax = fig.add_subplot(111)
+
+# 	ax.plot(xs2[:,0], xs2[:,1])
+
+# 	ax.plot(xs2[:,2], xs2[:,3])
+
+# 	ax.plot(xs2[:,4], xs2[:,5])
+
+# 	ax.axis('equal')
+
+# 	ax.grid()
+
+# 	plt.show()

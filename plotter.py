@@ -110,20 +110,18 @@ class Plotter(object):
 	def plot(self, xs):
 		self.plot_target()
 		for situ, x in xs.items():
-			for i, xi in enumerate(x[0]):
-				self.plot_traj('I'+str(i), situ, xi)
-			for d, xd in enumerate(x[1]):
-				p = 'D'+str(d)
-				self.plot_traj(p, situ, xd)
-				self.plot_capture_ring(p, situ, xd[-1, :])
+			for pid, px in x.items():
+				self.plot_traj(pid, situ, px)
+				if 'D' in pid:
+					self.plot_capture_ring(pid, situ, px[-1, :])
 			if situ == 'play':
-				self.plot_connect('I0', 'D0', x[0][0], x[1][0])
-				self.plot_connect('I0', 'D1', x[0][0], x[1][1])
+				self.plot_connect('I0', 'D0', x['I0'], x['D0'])
+				self.plot_connect('I0', 'D1', x['I0'], x['D1'])
 
-		# xi0 = xs['play'][0][0][0, :]
-		# xd0s = [xd[0, :] for xd in xs['play'][1]]
-		# self.plot_dr(xi0, xd0s, ind=True)
-		# self.plot_dcontour(xi0, xd0s)
+		xi0 = xs['play']['I0'][0, :]
+		xd0s = [xs['play']['D0'][0, :], xs['play']['D1'][0, :]]
+		self.plot_dr(xi0, xd0s, ind=True)
+		self.plot_dcontour(xi0, xd0s)
 
 		self.show_plot()
 

@@ -7,9 +7,10 @@ from tensorflow.keras.layers import Dense
 from tensorflow.keras.losses import MeanSquaredError
 from tensorflow.keras.models import load_model
 
-from Config import Config
-from envelope import envelope_traj, envelope_policy
-w = Config.VI_FAST/Config.VD
+from envelope import envelope_traj, envelope_policy, w
+
+BARRIER_DIR = 'BarrierFn'
+POLICY_DIR = 'PolicyFn'
 
 def network(n_in, ns, act_fns):
 	model = Sequential()
@@ -123,14 +124,14 @@ def learn_barrier(n_gmm,
 				  act_fns=[tf.nn.relu, tf.nn.relu, None],
 				  batch_size=1000,
 				  epochs=2000, 
-				  save_dir=Config.BARRIER_DIR):
+				  save_dir=BARRIER_DIR):
 
 	model = network(5, ns, act_fns)
 	xys, yis, n = sample_traj(n_gmm)
 	model.fit(xys, yis, batch_size=batch_size, epochs=epochs)
 	model.save(save_dir)
 
-def get_barrier_xi(xis, xd1=-3., yd1=3., xd2=-3., yd2=3., dir=Config.BARRIER_DIR):
+def get_barrier_xi(xis, xd1=-3., yd1=3., xd2=-3., yd2=3., dir=BARRIER_DIR):
 	barrier = load_model(dir)
 	n = len(xis)
 	xis = np.linspace(-5., 5., n)
@@ -146,7 +147,7 @@ def learn_policy(n_gmm,
 				  act_fns=[tf.nn.relu, tf.nn.relu, None],
 				  batch_size=3000,
 				  epochs=2000, 
-				  save_dir=Config.POLICY_DIR):
+				  save_dir=POLICY_DIR):
 
 	model = network(6, ns, act_fns)
 	xys, ps, n = sample_policy(n_gmm)

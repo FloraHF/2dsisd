@@ -11,8 +11,10 @@ def depth_in_target(xi, xds, target, a):
     return sol.x
 
 def deep_target_strategy(xi, xds, target, a):
+    # print(xi, xds)
     
     xt = depth_in_target(xi, xds, target, a)
+    # print(xt)
     IT = np.concatenate((xt - xi, np.zeros((1,))))
     DTs = []
     for xd in xds:

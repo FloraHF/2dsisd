@@ -18,12 +18,16 @@ def rk4_fxt(f, t0, x0, dt):
 	return x0 + k*dt
 
 def rk4_fxt_interval(f, t0, x0, te, dt):
-	n = int((te - t0)/dt)
-	ts = np.linspace(t0, te, n)
-	dt = (te - t0)/(n - 1)
-	
-	x = x0
-	for t in ts[:-2]:
-		x = rk4_fxt(f, t, x, dt)
+	# print(te - t0/dt)
+	if te - t0 < dt/2:
+		return x0
+	else:
+		n = max(int((te - t0)/dt), 2)
+		ts = np.linspace(t0, te, n)
+		dt = (te - t0)/(n - 1)
+		
+		x = x0
+		for t in ts[:-2]:
+			x = rk4_fxt(f, t, x, dt)
 	return x
 
