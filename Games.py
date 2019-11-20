@@ -47,7 +47,7 @@ class BaseGame(object):
 	def __init__(self, target, gtype, res_dir='res1/', ni=1, nd=2, read_exp=False):
 
 		# self._script_dir = os.path.dirname(__file__)
-		self._res_dir = res_dir
+		self.res_dir = res_dir
 		with open(os.path.dirname(__file__)+'/info_'+gtype+'.csv', 'r') as f:
 			data = f.readlines()
 			for line in data:
@@ -75,7 +75,8 @@ class BaseGame(object):
 		for i in range(ni):
 			pid = 'I'+str(i)
 			self.players[pid] = Player(self, pid, res_dir=res_dir, read_exp=read_exp)
-		self.plotter = Plotter(target, self.a, self.r)
+
+		self.plotter = Plotter(self, target, self.a, self.r)
 
 	def is_capture(self, xi, xds):
 		cap = False
@@ -103,16 +104,6 @@ class BaseGame(object):
 			vs[role] = p.get_velocity()
 		return vs
 
-	def read_exp_state(self, t):
-		xis, xds = np.zeros((self.ni,2)), np.zeros((self.nd,2))
-		for role, p in self.players.items():
-			if 'I' in role:
-				xis[int(role[-1]),:] = np.array([p.exp.x(t), p.exp.y(t)])
-			elif 'D' in role:
-				xds[int(role[-1]),:] = np.array([p.exp.x(t), p.exp.y(t)])
-		return xis, xds
-
-
 	def step(self, xs, dstrategy, istrategy, close_adjust=True):
 		if close_adjust:
 			actions = self.c_strategy(xs, dstrategy=dstrategy, istrategy=istrategy)
@@ -132,19 +123,21 @@ class BaseGame(object):
 		xs = dict()
 		for role, x in xs0.items():
 			xs[role] = [x]
+		ts = [0]
 		xold = xs0
 		while t<te:
 			xnew = self.step(xold, dstrategy=dstrategy, istrategy=istrategy, close_adjust=close_adjust)
+			t += self.dt
 			for role, x in xs.items():
 				x.append(xnew[role])
+			ts.append(t)
 			if self.is_capture(xnew['I0'], [xnew['D0'], xnew['D1']]):
 				print('capture')
 				break
-			t += self.dt
 			xold = xnew
 		for role, x in xs.items():
 			xs[role] = np.asarray(x)
-		return xs
+		return np.asarray(ts), xs
 		# t = 0
 		# xi0, xd0 = self.get_state()
 		# xis, xds = [xi0], [xd0]
@@ -158,6 +151,12 @@ class BaseGame(object):
 		# 		break
 		# return self.convert_data(xis), self.convert_data(xds)
 
+	# def read_exp_state(self, t):
+	# 	xs = {role:[] for role in self.players}
+	# 	for role, p in self.players.items():
+	# 		xs[role] = np.array([p.exp.x(t), p.exp.y(t)])
+	# 	return xis, xds
+
 	def replay_exp(self):
 		t_start, t_end = 100., -1.,
 		for role, p in self.players.items():
@@ -165,22 +164,27 @@ class BaseGame(object):
 				t_start = p.exp.t_start
 			if p.exp.t_end > t_end:
 				t_end = p.exp.t_end
-		t = t_start
-		xis, xds = [], []
-		while t < t_end:
-			xi, xd = self.read_exp_state(t)
-			xis.append(xi)
-			xds.append(xd)
-			t += self.dt 
-		return self.convert_data(xis), self.convert_data(xds)
 
-	def convert_data(self, xs):
-		n = xs[0].shape[0]
-		xs_ = [[] for _ in range(n)]
-		for x in xs:
-			for i in range(n):
-				xs_[i].append(x[i])
-		return np.asarray(xs_)
+		t = t_start
+		xs = {role:[] for role in self.players}
+		ts = []
+		while t < t_end:
+			ts.append(t)
+			for role, p in self.players.items():
+				xs[role].append(np.array([p.exp.x(t), p.exp.y(t)]))
+			t += self.dt 
+		for role, data in xs.items():
+			xs[role] = np.asarray(data)
+
+		return np.asarray(ts), xs
+
+	# def convert_data(self, xs):
+	# 	n = xs[0].shape[0]
+	# 	xs_ = [[] for _ in range(n)]
+	# 	for x in xs:
+	# 		for i in range(n):
+	# 			xs_[i].append(x[i])
+	# 	return np.asarray(xs_)
 
 	def reset(self, xs):
 		for role, p in self.players.items():
@@ -203,12 +207,19 @@ class SlowDgame(BaseGame):
 		assert gmm >= self.gmm_lb
 		from envelope import envelope_traj
 		xs, _ = envelope_traj(S, T, gmm, D, delta, n=n)
-		fname = self._res_dir+'analytic_traj_param.csv'
-		if not os.path.exists(self._res_dir):
-			os.mkdir(self._res_dir)
+		fname = self.res_dir+'analytic_traj_param.csv'
+		if not os.path.exists(self.res_dir):
+			os.mkdir(self.res_dir)
 		if os.path.exists(fname):
 			os.remove(fname)
 		with open(fname, 'a') as f:
+			f.write('vd,%.3f\n'%self.vd)
+			f.write('vi,%.3f\n'%self.vi)
+			f.write('rc,%.3f\n'%self.r)
+			# f.write('rt,%.3f\n'%self.rt)
+			f.write('r_close,%.3f\n'%self.r_close)
+			f.write('k_close,%.3f\n'%self.k_close)
+
 			f.write('S,%.3f\n'%S)
 			f.write('T,%.3f\n'%T)
 			f.write('gmm,%.3f\n'%gmm)

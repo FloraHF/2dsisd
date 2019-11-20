@@ -1,4 +1,7 @@
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+from matplotlib.patches import Circle
+
 import numpy as np
 from math import pi, sin, cos
 
@@ -7,7 +10,7 @@ from strategies_fastD import depth_in_target
 
 class Plotter(object):
 	"""docstring for Plotter"""
-	def __init__(self, target, a, r):
+	def __init__(self, game, target, a, r):
 
 		self.fig, self.ax = plt.subplots()
 		self.linestyles = {'play': (0, ()), 'ref':(0, (6, 3)), 'exp':(0, (3, 1))}
@@ -17,9 +20,10 @@ class Plotter(object):
 		self.xlim = [-r, r]
 		self.ylim = [-r, r]
 
-		self.r = r
-		self.a = a
-		self.target = target
+		self.game = game
+		self.r = game.r
+		self.a = game.a
+		self.target = game.target
 
 	def get_data(self, fn, midx=0, midy=0, kx=1., ky=1., n=50, arg=None):
 		x = np.linspace(midx+kx*self.xlim[0], midx+kx*self.xlim[1], n)
@@ -62,7 +66,7 @@ class Plotter(object):
 						dr = self.get_data(get_dr_ind, kx=k, ky=k, arg=xd)
 						CD = self.ax.contour(dr['X'], dr['Y'], dr['data'], [0], linestyles='dashed')
 						plt.contour(CD, levels = [0], colors=(self.colors[p],), linestyles=('dashed',))
-	    # dr unioned
+		# dr unioned
 		dr = self.get_data(get_dr, midx=xi[0], midy=xi[1], kx=k, ky=k)
 		CD = self.ax.contour(dr['X'], dr['Y'], dr['data'], [0], linestyles='solid')
 		plt.contour(CD, levels = [0], colors=(self.colors['I0'],), linestyles=('solid',))
@@ -124,6 +128,86 @@ class Plotter(object):
 		self.plot_dcontour(xi0, xd0s)
 
 		self.show_plot()
+
+	def animate_traj(self, ts, xs, linestyle=(0, ()), label='', alpha=0.5):
+		# print(xs)
+		n = xs['D0'].shape[0]
+		if ts is None:
+			ts = np.linspace(0, 5, n)
+		tail = int(n/5)
+
+		xmin = np.amin(np.array([x[:,0] for p, x in xs.items()]))
+		xmax = np.amax(np.array([x[:,0] for p, x in xs.items()]))
+		ymin = np.amin(np.array([x[:,1] for p, x in xs.items()]))
+		ymax = np.amax(np.array([x[:,1] for p, x in xs.items()]))
+		dx = (xmax - xmin)*0.2
+		dy = (ymax - ymin)*0.3
+
+		fig = plt.figure()
+		ax = fig.add_subplot(111, autoscale_on=True, xlim=(xmin-dx, xmax+dx), ylim=(ymin-dy, ymax+dy))
+
+		time_template = 'time = %.1fs'
+		time_text = ax.text(0.05, 0.9, '', transform=ax.transAxes, fontsize=16)
+		plots = dict()
+		plots['D0'], = ax.plot([], [], 'o', color='b', label=None)
+		plots['D1'], = ax.plot([], [], 'o', color='b', label=None)
+		plots['I0'], = ax.plot([], [], 'o', color='r', label=None)
+		plots['D0tail'], = ax.plot([], [], linewidth=2, color='b', linestyle=linestyle, label='Defender, '+label)
+		plots['D1tail'], = ax.plot([], [], linewidth=2, color='b', linestyle=linestyle, label=None)
+		plots['I0tail'], = ax.plot([], [], linewidth=2, color='r', linestyle=linestyle, label='Intruder, '+label)
+		plots['Dline'], = ax.plot([], [], '--', color='b', label=None)
+		plots['D0cap'] = Circle((0, 0), self.r, fc='b', ec='b', alpha=alpha, label=None)
+		plots['D1cap'] = Circle((0, 0), self.r, fc='b', ec='b', alpha=alpha, label=None)
+		ax.add_patch(plots['D0cap'])
+		ax.add_patch(plots['D1cap'])
+
+		ax.set_aspect('equal')
+		ax.grid()
+		ax.tick_params(axis = 'both', which = 'major', labelsize = 16)
+		plt.xlabel('x', fontsize=16)
+		plt.ylabel('y', fontsize=16)
+		plt.gca().legend(prop={'size': 12})
+
+		def init():
+			time_text.set_text('')
+			for role, x in xs.items():
+				# print(role)
+				plots[role].set_data([], [])
+				plots[role+'tail'].set_data([], [])
+				if 'D' in role:
+					plots[role+'cap'].center = (x[0,0], x[0,1])
+			plots['Dline'].set_data([], [])	
+
+			return plots['D0'], plots['D1'], \
+					plots['D0cap'], plots['D1cap'], \
+					plots['I0'], \
+					plots['D0tail'], plots['D1tail'], plots['I0tail'], \
+					plots['Dline'], \
+					time_text
+
+		def animate(i):
+			i = i%n
+			ii = np.clip(i-tail, 0, i)
+			time_text.set_text(time_template % (ts[i]))
+			for role, x in xs.items():
+				plots[role].set_data(x[i,0], x[i,1])
+				plots[role+'tail'].set_data(x[ii:i+1,0], x[ii:i+1,1])
+				if 'D' in role:
+					plots[role+'cap'].center = (x[i,0], x[i,1])
+			plots['Dline'].set_data([xs['D0'][i,0], xs['D1'][i,0]], [xs['D0'][i,1], xs['D1'][i,1]])	
+			return  plots['D0'], plots['D1'], \
+					plots['D0cap'], plots['D1cap'], \
+					plots['I0'], \
+					plots['D0tail'], plots['D1tail'], plots['I0tail'], \
+					plots['Dline'], time_text
+
+		ani = animation.FuncAnimation(fig, animate, init_func=init)
+		# ani = animation.ArtistAnimation(fig, ims, interval=50, blit=True,
+		#								 repeat_delay=1000)
+		ani.save(self.game.res_dir+'ani_traj.gif')
+		print(self.game.res_dir+'ani_traj.gif')
+		plt.show()	
+
 
 	def reset(self):
 		self.ax.clear()

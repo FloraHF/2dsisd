@@ -11,14 +11,14 @@ class ReplayPool(object):
 	def __init__(self, role, res_dir='res1/'):
 
 		self._role = role
-		self._exp_role = role[0] + str(int(role[1:])+1)
+		# self._exp_role = role[0] + str(int(role[1:])+1)
 
 		self._script_dir = os.path.dirname(__file__)
 		self._res_dir = res_dir
 		with open(res_dir+'info.csv', 'r') as f:
 			data = f.readlines()
 			for line in data:
-				if self._exp_role in line:
+				if self._role in line:
 					self._frame = line.split(',')[-1][:-1]
 
 		self._tm = 1.
@@ -44,7 +44,7 @@ class ReplayPool(object):
 		        	policy_id = 2
 		        elif 'z' in policy:
 		        	policy_id = 1
-		        elif self._exp_role in policy:
+		        elif self._role in policy:
 		        	policy_id = 0
 		        	if t_close is None:
 		        		t_close = time
