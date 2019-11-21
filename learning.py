@@ -2,10 +2,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 from math import pi, asin, acos, ceil
 import tensorflow as tf
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense
+# from tensorflow.keras.models import Sequential
+# from tensorflow.keras.layers import Dense
+# from tensorflow.keras.models import load_model
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.models import load_model
 from tensorflow.keras.losses import MeanSquaredError
-from tensorflow.keras.models import load_model
 
 from envelope import envelope_traj, envelope_policy, w
 
@@ -19,7 +22,7 @@ def network(n_in, ns, act_fns):
 			model.add(Dense(n, input_shape=(n_in,), activation=fn))
 		else:
 			model.add(Dense(n, activation=fn))
-	model.compile(optimizer='Adam', loss=MeanSquaredError(), metrics=['accuracy'])
+	model.compile(optimizer='Adam', loss='mean_squared_error', metrics=['accuracy'])
 	return model
 
 def sample_traj(n_gmm=4, T=7.):
@@ -146,20 +149,20 @@ def learn_policy(n_gmm,
 				  ns=[20, 20, 1], 
 				  act_fns=[tf.nn.relu, tf.nn.relu, None],
 				  batch_size=3000,
-				  epochs=2000, 
+				  epochs=1500,
 				  save_dir=POLICY_DIR):
 
 	model = network(6, ns, act_fns)
 	xys, ps, n = sample_policy(n_gmm)
 	model.fit(xys, ps[:,0], batch_size=batch_size, epochs=epochs)
-	model.save(save_dir+'_D0')
+	model.save(save_dir+'_D0.h5')
 	model.fit(xys, ps[:,1], batch_size=batch_size, epochs=epochs)
-	model.save(save_dir+'_I0')
+	model.save(save_dir+'_I0.h5')
 	model.fit(xys, ps[:,2], batch_size=batch_size, epochs=epochs)
-	model.save(save_dir+'_D1')
+	model.save(save_dir+'_D1.h5')
 
 
 if __name__ == '__main__':
 	
-	learn_policy(8)
+	learn_policy(6)
 

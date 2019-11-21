@@ -198,16 +198,16 @@ class SlowDgame(BaseGame):
 
 		self.policies = dict()
 		for role, p in self.players.items():
-			self.policies[role] = load_model(policy_dir+'_'+role)
+			self.policies[role] = load_model(policy_dir+'_'+role+'.h5')
 		self.s_lb = -asin(self.a)
 		self.gmm_lb = acos(self.a)
 
-	def analytic_traj(self, S, T, gmm, D, delta, n=50):
+	def analytic_traj(self, S, T, gmm, D, delta, n=50, file='traj_param_0.csv'):
 		assert S >= self.s_lb
 		assert gmm >= self.gmm_lb
 		from envelope import envelope_traj
 		xs, _ = envelope_traj(S, T, gmm, D, delta, n=n)
-		fname = self.res_dir+'analytic_traj_param.csv'
+		fname = self.res_dir+file
 		if not os.path.exists(self.res_dir):
 			os.mkdir(self.res_dir)
 		if os.path.exists(fname):

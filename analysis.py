@@ -6,7 +6,7 @@ from geometries import line
 if __name__ == '__main__':
 
 	game = SlowDgame(line, res_dir='res1/', policy_dir='PolicyFn', ni=1, nd=2, read_exp=False)
-	xs_ref = game.analytic_traj(game.s_lb+0.6, 4., game.gmm_lb+0.1, 0, 0.099999)
+	xs_ref = game.analytic_traj(game.s_lb+0.3, 7., game.gmm_lb+0.1, 0, 0.099999, file='traj_param_2.csv')
 	game.reset({role: x[0,:] for role, x in xs_ref.items()})
 	ts, xs_play = game.advance(5., game.nn_strategy, game.nn_strategy, close_adjust=True)
 	# game.plotter.plot({'play':xs_play, 'ref':xs_ref})
