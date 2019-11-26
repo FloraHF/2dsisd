@@ -14,23 +14,24 @@ class ReplayPool(object):
 		# self._exp_role = role[0] + str(int(role[1:])+1)
 
 		self._script_dir = os.path.dirname(__file__)
-		self._res_dir = res_dir
-		with open(res_dir+'info.csv', 'r') as f:
+		self._res_dir ='exp_results/' + res_dir
+		with open(self._res_dir+'info.csv', 'r') as f:
 			data = f.readlines()
 			for line in data:
-				if self._role in line:
+				if self._role == line.split(',')[0]:
 					self._frame = line.split(',')[-1][:-1]
 
 		self._tm = 1.
 		self.t_start, self.t_end, self.t_close, self.fp = self._read_policy()
 		self.x, self.y = self._read_xy(self.t_start, self.t_end, file='location.csv')
 		self.vx, self.vy = self._read_xy(self.t_start, self.t_end, file='cmdVtemp.csv')
-		self.a = self._read_a(self.t_start, self.t_end)
+		# self.a = self._read_a(self.t_start, self.t_end)
 
 	# read policy
 	def _read_policy(self):
 		t, p, t_close = [], [], None
 		data_dir = os.path.join(self._script_dir, self._res_dir + self._frame + '/data/')
+		# print(self._frame)
 		with open(data_dir + 'policy.csv') as f:
 		    data = f.readlines()
 		    for line in data:
@@ -38,10 +39,16 @@ class ReplayPool(object):
 		        time = float(datastr[0])
 		        t.append(time)
 		        policy = datastr[1]
+		        # print(policy)
+		        if 'nn' in policy:
+		        	policy_id = 4
+		        	# print('nn')
 		        if 'h' in policy:
 		        	policy_id = 3
 		        elif 'i' in policy:
 		        	policy_id = 2
+		        elif 'm' in policy:
+		        	policy_id = 2.5
 		        elif 'z' in policy:
 		        	policy_id = 1
 		        elif self._role in policy:
@@ -51,7 +58,7 @@ class ReplayPool(object):
 		        elif 'both' in policy:
 		        	policy_id = -1
 		        p.append(policy_id)
-
+		# print(len(t), len(p))
 		f_policy = interp1d(t, p)
 
 		return t[0], t[-1], t_close, f_policy
@@ -76,21 +83,21 @@ class ReplayPool(object):
 		return interp1d(t, x), interp1d(t, y)
 
 	# velocity
-	def _read_a(self, t_start, t_end):
-		t, a = [], []
-		data_dir = os.path.join(self._script_dir, self._res_dir + self._frame + '/data/')
-		with open(data_dir + 'a.csv') as f:
-		    data = f.readlines()
-		    for line in data:
-		        datastr = line.split(',')
-		        time = float(datastr[0])
-		        if time > t_start-0.1 and time < t_end+0.1:
-		        	t.append(time)
-		        	a.append(float(datastr[1]))       
-		t = np.asarray(t)
-		a = np.asarray(a)
+	# def _read_a(self, t_start, t_end):
+	# 	t, a = [], []
+	# 	data_dir = os.path.join(self._script_dir, self._res_dir + self._frame + '/data/')
+	# 	with open(data_dir + 'a.csv') as f:
+	# 	    data = f.readlines()
+	# 	    for line in data:
+	# 	        datastr = line.split(',')
+	# 	        time = float(datastr[0])
+	# 	        if time > t_start-0.1 and time < t_end+0.1:
+	# 	        	t.append(time)
+	# 	        	a.append(float(datastr[1]))       
+	# 	t = np.asarray(t)
+	# 	a = np.asarray(a)
 
-		return interp1d(t, a)
+	# 	return interp1d(t, a)
 
 	# def _read_heading(self, t_start, t_end, file='actual_heading.csv'):
 	# 	f_h = []

@@ -5,24 +5,25 @@ from math import asin, acos, atan2, sin, cos, pi, sqrt
 
 from tensorflow.keras.models import load_model
 
-from geometries import line, circle
+from geometries import LineTarget, DominantRegion
 from experiment_replay import ReplayPool
 from plotter import Plotter
-from strategies_fastD import deep_target_strategy
+from envelope import Envelope
+# from strategies_fastD import deep_target_strategy
 
 
 class Player(object):
 
-	def __init__(self, env, role, res_dir='', read_exp=False):
+	def __init__(self, env, role, res_dir=None):
 
 		self.env = env
 		self.role = role
 		self.dt = env.dt
-		if read_exp:
+		if res_dir is not None:
 			self.exp = ReplayPool(self.role, res_dir=res_dir)
 			self.x = np.array([self.exp.x(self.exp.t_start), self.exp.y(self.exp.t_start)])
 		self.v_curr = np.array([0., 0.])
-        
+		
 		if 'D' in role:
 			self.v_max = env.vd
 		elif 'I' in role:
@@ -31,7 +32,7 @@ class Player(object):
 	def step(self, action):
 		self.v_curr = self.v_max*np.array([cos(action), sin(action)])
 		self.x = self.x + self.dt*self.v_curr
-    
+	
 	def reset(self, x):
 		self.x = deepcopy(x)
 
@@ -44,23 +45,54 @@ class Player(object):
 
 class BaseGame(object):
 	"""docstring for BaseGame"""
-	def __init__(self, target, gtype, res_dir='res1/', ni=1, nd=2, read_exp=False):
+	def __init__(self, target, gtype, res_dir=None, ni=1, nd=2):
 
-		# self._script_dir = os.path.dirname(__file__)
-		self.res_dir = res_dir
-		with open(os.path.dirname(__file__)+'/info_'+gtype+'.csv', 'r') as f:
-			data = f.readlines()
-			for line in data:
-				if 'vd' in line:
-					self.vd = float(line.split(',')[-1])
-				if 'vi' in line:
-					self.vi = float(line.split(',')[-1])
-				if 'rc' in line:
-					self.r = float(line.split(',')[-1])
-				if 'r_close' in line:
-					self.r_close = float(line.split(',')[-1])*self.r
-				if 'k_close' in line:
-					self.k_close = float(line.split(',')[-1])		
+		if res_dir is not None:
+			self.res_dir = os.path.dirname(__file__)+'/exp_results/'+res_dir
+			with open(self.res_dir+'/info.csv', 'r') as f:
+				data = f.readlines()
+				for line in data:
+					if 'vd' in line:
+						self.vd = float(line.split(',')[-1])
+					if 'vi' in line:
+						self.vi = float(line.split(',')[-1])
+					if 'rc' in line:
+						self.r = float(line.split(',')[-1])
+					if 'r_close' in line:
+						self.r_close = float(line.split(',')[-1])*self.r
+					if 'k_close' in line:
+						self.k_close = float(line.split(',')[-1])		
+					if 'S' in line:
+						self.exp_S = float(line.split(',')[-1])
+					if 'T' in line:
+						self.exp_T = float(line.split(',')[-1])
+					if 'gmm' in line:
+						self.exp_gmm = float(line.split(',')[-1])
+						# print('ub:', self.exp_gmm - acos(self.vd/self.vi))
+					if 'D' == line.split(',')[0]:
+						self.exp_D = float(line.split(',')[-1])*self.r
+					if 'delta' in line:
+						delta = float(line.split(',')[-1])
+						if delta > self.exp_gmm - acos(self.vd/self.vi):
+							delta = self.exp_gmm - acos(self.vd/self.vi)					
+						self.exp_delta = delta
+		else:
+			self.res_dir = os.path.dirname(__file__)+'/test/'
+			if not os.path.exists(self.res_dir):
+				os.mkdir(self.res_dir)
+			with open(os.path.dirname(__file__)+'/config.csv', 'r') as f:
+				data = f.readlines()
+				for line in data:
+					if 'vd' in line:
+						self.vd = float(line.split(',')[-1])
+					if 'vi' in line:
+						self.vi = float(line.split(',')[-1])
+					if 'rc' in line:
+						self.r = float(line.split(',')[-1])
+					if 'r_close' in line:
+						self.r_close = float(line.split(',')[-1])*self.r
+					if 'k_close' in line:
+						self.k_close = float(line.split(',')[-1])
 
 		self.target = target
 		self.a = self.vd/self.vi
@@ -71,10 +103,10 @@ class BaseGame(object):
 		self.players = dict()
 		for i in range(nd):
 			pid = 'D'+str(i)
-			self.players[pid] = Player(self, pid, res_dir=res_dir, read_exp=read_exp)
+			self.players[pid] = Player(self, pid, res_dir=res_dir)
 		for i in range(ni):
 			pid = 'I'+str(i)
-			self.players[pid] = Player(self, pid, res_dir=res_dir, read_exp=read_exp)
+			self.players[pid] = Player(self, pid, res_dir=res_dir)
 
 		self.plotter = Plotter(self, target, self.a, self.r)
 
@@ -90,13 +122,6 @@ class BaseGame(object):
 		for role, p in self.players.items():
 			xs[role] = p.get_x()
 		return xs
-		# xis, xds = np.zeros((self.ni,2)), np.zeros((self.nd,2))
-		# for role, p in self.players.items():
-		# 	if 'I' in role:
-		# 		xis[int(role[-1]),:] = p.get_x()
-		# 	elif 'D' in role:
-		# 		xds[int(role[-1]),:] = p.get_x()
-		# return xis, xds
 
 	def get_velocity(self):
 		vs = dict()
@@ -138,24 +163,6 @@ class BaseGame(object):
 		for role, x in xs.items():
 			xs[role] = np.asarray(x)
 		return np.asarray(ts), xs
-		# t = 0
-		# xi0, xd0 = self.get_state()
-		# xis, xds = [xi0], [xd0]
-		# while t < te:
-		# 	xi, xd = self.step(xis[-1], xds[-1], dstrategy=dstrategy, istrategy=istrategy, close_adjust=close_adjust)
-		# 	xis.append(xi)
-		# 	xds.append(xd)
-		# 	t += self.dt 
-		# 	if self.is_capture(xi[0], xd):
-		# 		print('capture')
-		# 		break
-		# return self.convert_data(xis), self.convert_data(xds)
-
-	# def read_exp_state(self, t):
-	# 	xs = {role:[] for role in self.players}
-	# 	for role, p in self.players.items():
-	# 		xs[role] = np.array([p.exp.x(t), p.exp.y(t)])
-	# 	return xis, xds
 
 	def replay_exp(self):
 		t_start, t_end = 100., -1.,
@@ -178,14 +185,6 @@ class BaseGame(object):
 
 		return np.asarray(ts), xs
 
-	# def convert_data(self, xs):
-	# 	n = xs[0].shape[0]
-	# 	xs_ = [[] for _ in range(n)]
-	# 	for x in xs:
-	# 		for i in range(n):
-	# 			xs_[i].append(x[i])
-	# 	return np.asarray(xs_)
-
 	def reset(self, xs):
 		for role, p in self.players.items():
 			p.reset(xs[role])
@@ -193,23 +192,23 @@ class BaseGame(object):
 
 class SlowDgame(BaseGame):
 	"""docstring for SlowDgame"""
-	def __init__(self, target, res_dir, policy_dir, ni, nd, read_exp=False):
-		super(SlowDgame, self).__init__(target, gtype='slowD', res_dir=res_dir, ni=ni, nd=nd, read_exp=read_exp)
+	def __init__(self, target, res_dir, policy_dir='PolicyFn', ni=1, nd=2):
+		super(SlowDgame, self).__init__(target, gtype='slowD', res_dir=res_dir, ni=ni, nd=nd)
 
 		self.policies = dict()
 		for role, p in self.players.items():
-			self.policies[role] = load_model(policy_dir+'_'+role+'.h5')
+			self.policies[role] = load_model('Policies/'+policy_dir+'_'+role+'.h5')
 		self.s_lb = -asin(self.a)
 		self.gmm_lb = acos(self.a)
+		self.analytic_traj = Envelope(self.vi, self.vd, self.r)
 
-	def analytic_traj(self, S, T, gmm, D, delta, n=50, file='traj_param_0.csv'):
+	def generate_analytic_traj(self, S, T, gmm, D, delta, n=50, file='traj_param_100.csv'):
 		assert S >= self.s_lb
 		assert gmm >= self.gmm_lb
-		from envelope import envelope_traj
-		xs, _ = envelope_traj(S, T, gmm, D, delta, n=n)
-		fname = self.res_dir+file
-		if not os.path.exists(self.res_dir):
-			os.mkdir(self.res_dir)
+		xs, _ = self.analytic_traj.envelope_traj(S, T, gmm, D, delta, n=n)
+		fname = 'params/'+file
+		if not os.path.exists('params/'):
+			os.mkdir('params/')
 		if os.path.exists(fname):
 			os.remove(fname)
 		with open(fname, 'a') as f:
@@ -217,19 +216,24 @@ class SlowDgame(BaseGame):
 			f.write('vi,%.3f\n'%self.vi)
 			f.write('rc,%.3f\n'%self.r)
 			# f.write('rt,%.3f\n'%self.rt)
-			f.write('r_close,%.3f\n'%self.r_close)
+			f.write('r_close,%.3f\n'%(self.r_close/self.r))
 			f.write('k_close,%.3f\n'%self.k_close)
 
-			f.write('S,%.3f\n'%S)
-			f.write('T,%.3f\n'%T)
-			f.write('gmm,%.3f\n'%gmm)
-			f.write('D,%.3f\n'%D)
-			f.write('delta,%.3f\n'%delta)
+			f.write('S,%.10f\n'%S)
+			f.write('T,%.10f\n'%T)
+			f.write('gmm,%.10f\n'%gmm)
+			f.write('D,%.10f\n'%D)
+			f.write('delta,%.10f\n'%delta)
 
 			f.write('xD0,' + ','.join(list(map(str,xs[0,:2]))) + '\n')
 			f.write('xD1,' + ','.join(list(map(str,xs[0,4:]))) + '\n')
 			f.write('xI0,' + ','.join(list(map(str,xs[0,2:4]))) + '\n')
 		
+		return {'D0': xs[:,:2], 'D1': xs[:,4:], 'I0': xs[:,2:4]}
+
+	def reproduce_analytic_traj(self, n=50):
+		# from envelope import envelope_traj
+		xs, _ = self.analytic_traj.envelope_traj(self.exp_S, self.exp_T, self.exp_gmm, self.exp_D, self.exp_delta, n=n)
 		return {'D0': xs[:,:2], 'D1': xs[:,4:], 'I0': xs[:,2:4]}
 
 	def nn_strategy(self, xs):
@@ -280,17 +284,6 @@ class SlowDgame(BaseGame):
 		a2 = asin(self.r/d2)
 		return d1, d2, a1, a2
 
-	def f_strategy(self, xs):
-		psis, phis = deep_target_strategy(xs['I0'], (xs['D0'], xs['D1']), self.target, self.a)
-		# print(psis, phis)
-		acts = dict()
-		for role, p in self.players.items():
-			if 'D' in role:
-				acts[role] = phis[int(role[-1])]
-			elif 'I' in role:
-				acts[role] = psis[int(role[-1])]
-		return acts
-
 	def z_strategy(self, xs):
 		D1_I, D2_I, D1_D2 = self.get_vecs(xs)
 		base = self.get_base(D1_I, D2_I, D1_D2)
@@ -317,8 +310,8 @@ class SlowDgame(BaseGame):
 		x, y, z = self.get_xyz(D1_I, D2_I, D1_D2)
 
 		x_ = {'D1': np.array([0, -z]),
-              'D2': np.array([0, z]),
-              'I': np.array([x, y])}
+			  'D2': np.array([0, z]),
+			  'I': np.array([x, y])}
 
 		Delta = sqrt(np.maximum(x ** 2 - (1 - 1/self.a**2)*(x**2 + y**2 - (z/self.a)**2), 0))
 		if (x + Delta) / (1 - 1/self.a ** 2) - x > 0:
@@ -389,13 +382,13 @@ class SlowDgame(BaseGame):
 
 			vD2 = np.concatenate((vs['D1'], [0]))
 			phi_2 = atan2(np.cross(D2_I, vD2)[-1], np.dot(D2_I, vD2))
-			phi_2 = self.k_close*phi_2 + base['D1']         
+			phi_2 = self.k_close*phi_2 + base['D1']		 
 			
 			psi = -self.get_theta(D1_I, D2_I, D1_D2)/2 + base['I0']
 
 			return {'D0': phi_1, 'D1': phi_2, 'I0': psi}
 
-        #=============== only D1 is close ===============#
+		#=============== only D1 is close ===============#
 		elif np.linalg.norm(D1_I) < self.r_close:  # in D1's range
 			# print(vs['D0'])
 			vD1 = np.concatenate((vs['D0'], [0]))
@@ -409,7 +402,7 @@ class SlowDgame(BaseGame):
 
 			return {'D0': phi_1, 'D1': phi_2, 'I0': psi}
 
-        #=============== only D2 is close ===============#
+		#=============== only D2 is close ===============#
 		elif np.linalg.norm(D2_I) < self.r_close:
 			vD2 = np.concatenate((vs['D1'], [0]))
 			phi_2 = atan2(np.cross(D2_I, vD2)[-1], np.dot(D2_I, vD2))
@@ -422,7 +415,7 @@ class SlowDgame(BaseGame):
 
 			return {'D0': phi_1, 'D1': phi_2, 'I0': psi}
 
-        #============== no defender is close =============#
+		#============== no defender is close =============#
 		else:
 			dact = dstrategy(xs)
 			iact = istrategy(xs)
@@ -430,11 +423,30 @@ class SlowDgame(BaseGame):
 
 class FastDgame(BaseGame):
 	"""docstring for FastDgame"""
-	def __init__(self, target, res_dir, ni, nd, read_exp=False):
-		super(FastDgame, self).__init__(target, gtype='fastD', res_dir=res_dir, ni=ni, nd=nd, read_exp=read_exp)
+	def __init__(self, target, res_dir, ni, nd):
+		super(FastDgame, self).__init__(target, gtype='fastD', res_dir=res_dir, ni=ni, nd=nd)
+
+	def deep_target_strategy(self, xi, xds):
+		dr = DominantRegion(self.r, self.a, xi, xds)
+		xt = self.target.deepest_point_in_dr(dr)
+
+		IT = np.concatenate((xt - xi, np.zeros((1,))))
+		DTs = []
+		for xd in xds:
+			DT = np.concatenate((xt - xd, np.zeros(1,)))
+			DTs.append(DT)
+		xaxis = np.array([1, 0, 0])
+
+		psi = atan2(np.cross(xaxis, IT)[-1], np.dot(xaxis, IT))
+		phis = []
+		for DT in DTs:
+			phi = atan2(np.cross(xaxis, DT)[-1], np.dot(xaxis, DT))
+			phis.append(phi)
+
+		return [psi], phis
 
 	def f_strategy(self, xs):
-		psis, phis = deep_target_strategy(xs['I0'], (xs['D0'], xs['D1']), self.target, self.a)
+		psis, phis = self.deep_target_strategy(xs['I0'], (xs['D0'], xs['D1']))
 		# print(psis, phis)
 		acts = dict()
 		for role, p in self.players.items():

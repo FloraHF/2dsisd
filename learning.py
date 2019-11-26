@@ -13,7 +13,7 @@ from tensorflow.keras.losses import MeanSquaredError
 from envelope import envelope_traj, envelope_policy, w
 
 BARRIER_DIR = 'BarrierFn'
-POLICY_DIR = 'PolicyFn'
+POLICY_DIR = 'Policies/PolicyFn'
 
 def network(n_in, ns, act_fns):
 	model = Sequential()
