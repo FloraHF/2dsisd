@@ -3,7 +3,7 @@ import numpy as np
 from copy import deepcopy
 from math import asin, acos, atan2, sin, cos, pi, sqrt
 
-from tensorflow.keras.models import load_model
+from keras.models import load_model
 
 from geometries import LineTarget, DominantRegion
 from experiment_replay import ReplayPool

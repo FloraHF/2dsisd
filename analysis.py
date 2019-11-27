@@ -56,6 +56,6 @@ def replay_exp(res_dir='res1/', ni=1, nd=2):
 
 if __name__ == '__main__':
 
-	generate_data_for_exp(0.0, 5, acos(1/1.5)+0.1,0,0.08,param_file='traj_param_2.csv')
+	generate_data_for_exp(-0.05, 5, acos(1/1.5)+0.1,0,0.09999999,param_file='traj_param_3.csv')
 	# play_fastD_game(np.array([-1, 0]), np.array([-0.2, 0.5]), np.array([1, 0]))
 	# replay_exp(res_dir='res5/', ni=1, nd=2)
