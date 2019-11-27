@@ -28,8 +28,14 @@ class LineTarget(object):
 	def level(self, x):
 		return x[1] - self.y0
 
-	def deepest_point_in_dr(self, dr):
-		in_dr = NonlinearConstraint(dr.level, -np.inf, 0)
+	def deepest_point_in_dr(self, dr, target=None):
+		if target is not None:
+			def obj(x):
+				return max(dr.level(x), -target.level(x))
+		else:
+			def obj(x):
+				return dr.level(x)
+		in_dr = NonlinearConstraint(obj, -np.inf, 0)
 		sol = minimize(self.level, dr.xi, constraints=(in_dr,))
 		return sol.x
 

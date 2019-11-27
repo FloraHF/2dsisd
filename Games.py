@@ -9,7 +9,6 @@ from geometries import LineTarget, DominantRegion
 from experiment_replay import ReplayPool
 from plotter import Plotter
 from envelope import Envelope
-# from strategies_fastD import deep_target_strategy
 
 
 class Player(object):
@@ -434,9 +433,15 @@ class FastDgame(BaseGame):
 	def __init__(self, target, res_dir, ni, nd):
 		super(FastDgame, self).__init__(target, gtype='fastD', res_dir=res_dir, ni=ni, nd=nd)
 
-	def deep_target_strategy(self, xi, xds):
+
+	def deepest_in_target(self, xi, xds):
 		dr = DominantRegion(self.r, self.a, xi, xds)
-		xt = self.target.deepest_point_in_dr(dr)
+		return self.target.deepest_point_in_dr(dr, target=self.target)
+
+	def deep_target_strategy(self, xi, xds):
+		xt = self.deepest_in_target(xi, xds)
+		# dr = DominantRegion(self.r, self.a, xi, xds)
+		# xt = self.target.deepest_point_in_dr(dr, target=self.target)
 
 		IT = np.concatenate((xt - xi, np.zeros((1,))))
 		DTs = []

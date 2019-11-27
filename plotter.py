@@ -6,7 +6,6 @@ import numpy as np
 from math import pi, sin, cos
 
 from geometries import DominantRegion
-# from strategies_fastD import depth_in_target
 
 class Plotter(object):
 	"""docstring for Plotter"""
@@ -65,12 +64,18 @@ class Plotter(object):
 		CD = self.ax.contour(dr['X'], dr['Y'], dr['data'], [0], linestyles='solid')
 		plt.contour(CD, levels = [0], colors=(self.colors['I0'],), linestyles=('solid',))
 		# locations of players
-		self.ax.plot(xi[0], xi[1], '.', color=self.colors['I0'])
+		# self.ax.plot(xi[0], xi[1], 'x', color=self.colors['I0'], zorder=100)
+		self.ax.plot(xi[0], xi[1], 'x', color='k', zorder=100)
 		for p, c in self.colors.items():
 			if 'D' in p:
 				i = int(p[-1])
 				if i < nd:
-					self.ax.plot(xds[i][0], xds[i][1], '.', color=self.colors[p])
+					# self.ax.plot(xds[i][0], xds[i][1], 'x', color=self.colors[p], zorder=100)
+					self.ax.plot(xds[i][0], xds[i][1], 'x', color='k', zorder=100)
+
+		xt = self.game.deepest_in_target(xi, xds)
+		print(self.game.target.level(xt))
+		self.ax.plot(xt[0], xt[1], '<', color='k', zorder=200)
 
 	def plot_dcontour(self, xi, xds, levels=[0.]):
 
@@ -122,8 +127,7 @@ class Plotter(object):
 		plt.gca().legend(prop={'size': 12}, ncol=2)
 		if fname is not None:
 			self.fig.savefig(self.game.res_dir+fname)
-		else:
-			plt.show()
+		plt.show()
 		self.reset()
 
 	def process_policy_labels(self, ps):
@@ -136,7 +140,7 @@ class Plotter(object):
 				labels[role] = None
 		return labels
 
-	def plot(self, xs, geox, ps=None, dr=False, dcontour=False, fname=None):
+	def plot(self, xs, geox, ps=None, dr=False, ndr=0, dcontour=False, fname=None):
 		# ps: policies dict: {'D0': , 'D1': , 'I': }
 		ps = self.process_policy_labels(ps)
 
@@ -150,8 +154,8 @@ class Plotter(object):
 				self.plot_connect('I0', 'D0', x['I0'], x['D0'])
 				self.plot_connect('I0', 'D1', x['I0'], x['D1'])
 
-		xi0 = xs[geox]['I0'][0, :]
-		xd0s = [xs[geox]['D0'][0, :], xs[geox]['D1'][0, :]]
+		xi0 = xs[geox]['I0'][ndr, :]
+		xd0s = [xs[geox]['D0'][ndr, :], xs[geox]['D1'][ndr, :]]
 		if dr:
 			self.plot_dr(xi0, xd0s, ind=True)
 		if dcontour:
