@@ -102,13 +102,13 @@ class Envelope(object):
 			xyd1, xyi = self.envelope_rotate(s, ts, delta=delta+D)
 		else:
 			alpha = pi/2 + delta + D
-			xi = vi*t*cos(alpha)
-			yi = vi*t*sin(alpha)
+			xi = self.vi*t*cos(alpha)
+			yi = self.vi*t*sin(alpha)
 			xyi = np.array([xi, yi])
 
 			beta = pi/2 + D + gmm
-			xd1 = (self.vd*t + r)*cos(beta)
-			yd1 = (self.vd*t + r)*sin(beta)
+			xd1 = (self.vd*t + self.r)*cos(beta)
+			yd1 = (self.vd*t + self.r)*sin(beta)
 			xyd1 = np.array([xd1, yd1])
 		# print(t, tt)
 

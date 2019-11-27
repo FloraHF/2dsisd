@@ -11,6 +11,14 @@ class ReplayPool(object):
 	def __init__(self, role, res_dir='res1/'):
 
 		self._role = role
+		self.pdict = {'nn': 5,
+					  'h': 4,
+					  'i': 2,
+					  'm': 3,
+					  'z': 1,
+					  'D0 close': 0,
+					  'D1 close': 0,
+					  'both close': -1,}
 		# self._exp_role = role[0] + str(int(role[1:])+1)
 
 		self._script_dir = os.path.dirname(__file__)
@@ -40,23 +48,12 @@ class ReplayPool(object):
 		        t.append(time)
 		        policy = datastr[1]
 		        # print(policy)
-		        if 'nn' in policy:
-		        	policy_id = 4
-		        	# print('nn')
-		        if 'h' in policy:
-		        	policy_id = 3
-		        elif 'i' in policy:
-		        	policy_id = 2
-		        elif 'm' in policy:
-		        	policy_id = 2.5
-		        elif 'z' in policy:
-		        	policy_id = 1
-		        elif self._role in policy:
-		        	policy_id = 0
-		        	if t_close is None:
-		        		t_close = time
-		        elif 'both' in policy:
-		        	policy_id = -1
+		        for pname, pnum in self.pdict.items():
+		        	if pname in policy:
+		        		policy_id = pnum
+		        	if 'close' in policy:
+		        		if t_close is None:
+		        			t_close = time
 		        p.append(policy_id)
 		# print(len(t), len(p))
 		f_policy = interp1d(t, p)

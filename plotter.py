@@ -49,11 +49,6 @@ class Plotter(object):
 		nd = len(xds)
 
 		dr_comb = DominantRegion(self.r, self.a, xi, xds)
-		# def get_dr(x):
-		# 	return dominant_region(x, xi, xds, self.a)
-		# def get_dr_ind(x, xd):
-		# 	return dominant_region(x, xi, [xd], self.a)
-		# dr individual
 		if ind and nd > 1:
 			for p, c in self.colors.items():
 				if 'D' in p:
@@ -97,9 +92,18 @@ class Plotter(object):
 			ys.append(x[1] + self.r*sin(t))
 		self.ax.plot(xs, ys, color=self.colors[player], linestyle=self.linestyles[situation])
 
-	def plot_traj(self, player, situation, xs):
-		self.ax.plot(xs[:,0], xs[:,1], color=self.colors[player], linestyle=self.linestyles[situation])
-		self.ax.plot(xs[-1,0], xs[-1,1], 'o', color=self.colors[player], linestyle=self.linestyles[situation])
+	def plot_traj(self, player, situation, xs, label=None):
+		if label is not None:
+			if situation == 'ref':
+				label = player + ': ' + 'ref'
+			else:
+				label = player + ': ' + label
+			if 'I' in label:
+				label = ' '+label
+		else:
+			label = player
+		self.ax.plot(xs[:,0], xs[:,1], color=self.colors[player], linestyle=self.linestyles[situation], label=label)
+		self.ax.plot(xs[-1,0], xs[-1,1], 'o', color=self.colors[player], linestyle=self.linestyles[situation], label='_Hidden')
 
 	def plot_connect(self, p1, p2, xs1, xs2, skip=20):
 		n = xs1.shape[0]
@@ -112,17 +116,34 @@ class Plotter(object):
 	def show_plot(self, fname=None):
 		self.ax.axis('equal')
 		self.ax.grid()
+		self.ax.tick_params(axis='both', which='major', labelsize=14)
+		plt.xlabel('x(m)', fontsize=14)
+		plt.ylabel('y(m)', fontsize=14)
+		plt.gca().legend(prop={'size': 12}, ncol=2)
 		if fname is not None:
 			self.fig.savefig(self.game.res_dir+fname)
 		else:
 			plt.show()
 		self.reset()
 
-	def plot(self, xs, geox, dr=False, dcontour=False, fname=None):
+	def process_policy_labels(self, ps):
+		labels = dict()
+		if ps is not None:
+			for role, lbl in ps.items():
+				labels[role] = lbl 
+		else:
+			for role in self.game.players:
+				labels[role] = None
+		return labels
+
+	def plot(self, xs, geox, ps=None, dr=False, dcontour=False, fname=None):
+		# ps: policies dict: {'D0': , 'D1': , 'I': }
+		ps = self.process_policy_labels(ps)
+
 		self.plot_target()
 		for situ, x in xs.items():
 			for pid, px in x.items():
-				self.plot_traj(pid, situ, px)
+				self.plot_traj(pid, situ, px, label=ps[pid])
 				if 'D' in pid:
 					self.plot_capture_ring(pid, situ, px[-1, :])
 			if situ == geox:
@@ -138,8 +159,10 @@ class Plotter(object):
 
 		self.show_plot(fname=fname)
 
-	def animate(self, ts, xs, xrs=None, linestyle=(0, ()), label='', alpha=0.5):
+	def animate(self, ts, xs, ps=None, xrs=None, linestyle=(0, ()), label='', alpha=0.5):
 		# print(xs)
+		ps = self.process_policy_labels(ps)
+
 		n = xs['D0'].shape[0]
 		if ts is None:
 			ts = np.linspace(0, 5, n)
@@ -159,31 +182,37 @@ class Plotter(object):
 		# ax = fig.add_subplot(111, autoscale_on=True, xlim=(xmin-dx, xmax+dx), ylim=(ymin-dy, ymax+dy))
 		if xrs is not None:
 			for pid, px in xrs.items():
-				self.plot_traj(pid, 'ref', px)
+				self.plot_traj(pid, 'ref', px, label=ps[pid])
 				if 'D' in pid:
 					self.plot_capture_ring(pid, 'ref', px[-1, :])
 
 		time_template = 'time = %.1fs'
-		time_text = self.ax.text(0.05, 0.9, '', transform=self.ax.transAxes, fontsize=16)
+		time_text = self.ax.text(0.05, 0.9, '', transform=self.ax.transAxes, fontsize=14)
 		plots = dict()
-		plots['D0'], = self.ax.plot([], [], 'o', color='b', label=None)
-		plots['D1'], = self.ax.plot([], [], 'o', color='b', label=None)
-		plots['I0'], = self.ax.plot([], [], 'o', color='r', label=None)
-		plots['D0tail'], = self.ax.plot([], [], linewidth=2, color='b', linestyle=linestyle, label='Defender, '+label)
-		plots['D1tail'], = self.ax.plot([], [], linewidth=2, color='b', linestyle=linestyle, label=None)
-		plots['I0tail'], = self.ax.plot([], [], linewidth=2, color='r', linestyle=linestyle, label='Intruder, '+label)
+		plots['D0'], = self.ax.plot([], [], 'o', color=self.colors['D0'], label=None)
+		plots['D1'], = self.ax.plot([], [], 'o', color=self.colors['D1'], label=None)
+		plots['I0'], = self.ax.plot([], [], 'o', color=self.colors['I0'], label=None)
+		for role in self.game.players:
+			if ps[role] is None:
+				plots[role+'tail'], = self.ax.plot([], [], linewidth=2, color=self.colors[role], linestyle=linestyle, label=role)
+			else:
+				if 'I' in role:
+					plots[role+'tail'], = self.ax.plot([], [], linewidth=2, color=self.colors[role], linestyle=linestyle, label=' '+role+': '+ps[role])
+				else:
+					plots[role+'tail'], = self.ax.plot([], [], linewidth=2, color=self.colors[role], linestyle=linestyle, label=role+': '+ps[role])
+
 		plots['Dline'], = self.ax.plot([], [], '--', color='b', label=None)
-		plots['D0cap'] = Circle((0, 0), self.r, fc='b', ec='b', alpha=alpha, label=None)
-		plots['D1cap'] = Circle((0, 0), self.r, fc='b', ec='b', alpha=alpha, label=None)
+		plots['D0cap'] = Circle((0, 0), self.r, fc='b', ec=self.colors['D0'], alpha=alpha, label=None)
+		plots['D1cap'] = Circle((0, 0), self.r, fc='b', ec=self.colors['D1'], alpha=alpha, label=None)
 		self.ax.add_patch(plots['D0cap'])
 		self.ax.add_patch(plots['D1cap'])
 
 		self.ax.set_aspect('equal')
 		self.ax.grid()
-		self.ax.tick_params(axis = 'both', which = 'major', labelsize = 16)
-		plt.xlabel('x', fontsize=16)
-		plt.ylabel('y', fontsize=16)
-		plt.gca().legend(prop={'size': 12})
+		self.ax.tick_params(axis='both', which='major', labelsize=14)
+		plt.xlabel('x(m)', fontsize=14)
+		plt.ylabel('y(m)', fontsize=14)
+		plt.gca().legend(prop={'size': 12}, ncol=2)
 
 		def init():
 			time_text.set_text('')

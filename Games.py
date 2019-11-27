@@ -165,25 +165,29 @@ class BaseGame(object):
 		return np.asarray(ts), xs
 
 	def replay_exp(self):
-		t_start, t_end = 100., -1.,
+		t_start, t_end = -1., 10000.,
 		for role, p in self.players.items():
-			if p.exp.t_start < t_start:
+			if p.exp.t_start > t_start:
 				t_start = p.exp.t_start
-			if p.exp.t_end > t_end:
+			if p.exp.t_end < t_end:
 				t_end = p.exp.t_end
+		# print(t_start, t_end)
 
 		t = t_start
 		xs = {role:[] for role in self.players}
+		ps = {role:[] for role in self.players}
 		ts = []
 		while t < t_end:
+			# print(t)
 			ts.append(t)
 			for role, p in self.players.items():
 				xs[role].append(np.array([p.exp.x(t), p.exp.y(t)]))
+				ps[role].append(p.exp.fp(t))
 			t += self.dt 
 		for role, data in xs.items():
 			xs[role] = np.asarray(data)
 
-		return np.asarray(ts), xs
+		return np.asarray(ts), xs, ps
 
 	def reset(self, xs):
 		for role, p in self.players.items():
@@ -201,6 +205,10 @@ class SlowDgame(BaseGame):
 		self.s_lb = -asin(self.a)
 		self.gmm_lb = acos(self.a)
 		self.analytic_traj = Envelope(self.vi, self.vd, self.r)
+		self.policy_dir = {'nn': self.nn_strategy,
+							'h': self.h_strategy,
+							'm': self.m_strategy,
+							}
 
 	def generate_analytic_traj(self, S, T, gmm, D, delta, n=50, file='traj_param_100.csv'):
 		assert S >= self.s_lb
