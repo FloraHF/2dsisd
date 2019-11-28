@@ -3,7 +3,7 @@ import numpy as np
 from copy import deepcopy
 from math import asin, acos, atan2, sin, cos, pi, sqrt
 
-from keras.models import load_model
+from tensorflow.keras.models import load_model
 
 from geometries import LineTarget, DominantRegion
 from experiment_replay import ReplayPool
@@ -188,6 +188,28 @@ class BaseGame(object):
 
 		return np.asarray(ts), xs, ps
 
+	def get_vecs(self, xs):
+		D1 = np.concatenate((xs['D0'], [0]))
+		D2 = np.concatenate((xs['D1'], [0]))
+		I = np.concatenate((xs['I0'], [0]))
+		D1_I = I - D1
+		D2_I = I - D2
+		D1_D2 = D2 - D1
+		return D1_I, D2_I, D1_D2
+	
+	def get_base(self, D1_I, D2_I, D1_D2):
+		base_d1 = atan2(D1_I[1], D1_I[0])
+		base_d2 = atan2(D2_I[1], D2_I[0])
+		base_i = atan2(-D2_I[1], -D2_I[0])
+		# print(base_d1*180/pi, base_d2*180/pi, base_i*180/pi)
+		return {'D0': base_d1, 'D1': base_d2, 'I0': base_i}
+
+	def get_xyz(self, D1_I, D2_I, D1_D2):
+		z = np.linalg.norm(D1_D2)/2
+		x = -np.cross(D1_D2, D1_I)[-1]/(2*z)
+		y = np.dot(D1_D2, D1_I)/(2*z) - z
+		return x, y, z
+
 	def reset(self, xs):
 		for role, p in self.players.items():
 			p.reset(xs[role])
@@ -249,28 +271,6 @@ class SlowDgame(BaseGame):
 		for role, p in self.policies.items():
 			acts[role] = p.predict(x[None])[0]
 		return acts
-
-	def get_vecs(self, xs):
-		D1 = np.concatenate((xs['D0'], [0]))
-		D2 = np.concatenate((xs['D1'], [0]))
-		I = np.concatenate((xs['I0'], [0]))
-		D1_I = I - D1
-		D2_I = I - D2
-		D1_D2 = D2 - D1
-		return D1_I, D2_I, D1_D2
-	
-	def get_base(self, D1_I, D2_I, D1_D2):
-		base_d1 = atan2(D1_I[1], D1_I[0])
-		base_d2 = atan2(D2_I[1], D2_I[0])
-		base_i = atan2(-D2_I[1], -D2_I[0])
-		# print(base_d1*180/pi, base_d2*180/pi, base_i*180/pi)
-		return {'D0': base_d1, 'D1': base_d2, 'I0': base_i}
-
-	def get_xyz(self, D1_I, D2_I, D1_D2):
-		z = np.linalg.norm(D1_D2)/2
-		x = -np.cross(D1_D2, D1_I)[-1]/(2*z)
-		y = np.dot(D1_D2, D1_I)/(2*z) - z
-		return x, y, z
 
 	def get_theta(self, D1_I, D2_I, D1_D2):
 		k1 = atan2(np.cross(D1_D2, D1_I)[-1], np.dot(D1_D2, D1_I))  # angle between D1_D2 to D1_I
@@ -468,4 +468,46 @@ class FastDgame(BaseGame):
 			elif 'I' in role:
 				acts[role] = psis[int(role[-1])]
 		return acts
-		
+
+	def p_strategy(self, xs):
+		D1_I, D2_I, D1_D2 = self.get_vecs(xs)
+		base = self.get_base(D1_I, D2_I, D1_D2)
+		x, y, z = self.get_xyz(D1_I, D2_I, D1_D2)
+		print(x, y, z)
+		A = -self.a**2 + 1
+		B =  2*self.a**2*x 
+		C = -self.a**2*(x**2 + y**2) + z**2 + self.r**2
+		a, b, c, d, e = A**2, 2*A*B, B**2+2*A*C-4*self.r**2, 2*B*C, C**2-4*self.r**2*z**2
+		Dlt = 256*a**3*e**3 - 192*a**2*b*d*e**2 - 128*a**2*c**2*e**2 + 144*a**2*c*d**2*e - 27*a**2*d**4\
+			+ 144*a*b**2*c*e**2 - 6*a*b**2*d**2*e - 80*a*b*c**2*d*e + 18*a*b*c*d**3 + 16*a*c**4*e\
+			- 4*a*c**3*d**2 - 27*b**4*e**2 + 18*b**3*c*d*e - 4*b**3*d**3 - 4*b**2*c**3*e + b**2*c**2*d**2
+		P = 8*a*c - 3*b**2
+		R = b**3 + 8*d*a**2 - 4*a*b*c 
+		Dlt0 = c**2 - 3*b*d + 12*a*e 
+		D = 64*a**3*e - 16*a**2*c**2 + 16*a*b**2*c - 16*a**2*b*d - 3*b**4
+		roots = np.roots([a, b, c, d, e])
+		rs = []
+		for r in roots:
+			print(r)
+		if Dlt < 0:
+			print('two distinct real and two complex')
+		elif Dlt > 0:
+			if P<0 and D<0:
+				print('four distinct real')
+			else:
+				print('two pairs of complex')
+		else:
+			pass
+		print(Dlt)
+		print(P)
+		print(R)
+		print(Dlt0)
+		print(D)
+			# if abs(r.imag) < 1e-6:
+			# 	rs.appendr.real
+			# lhs = sqrt(r**2 + z**2) - r
+			# rhs = self.a*sqrt(y**2 + (r - x)**2)
+			# print(lhs, rhs)
+
+
+		# print(roots)
