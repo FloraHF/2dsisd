@@ -474,7 +474,7 @@ class FastDgame(BaseGame):
 		D1_I, D2_I, D1_D2 = self.get_vecs(xs)
 		base = self.get_base(D1_I, D2_I, D1_D2)
 		x, y, z = self.get_xyz(D1_I, D2_I, D1_D2)
-		print(x, y, z)
+		# print(x, y, z)
 		A = -self.a**2 + 1
 		B =  2*self.a**2*x 
 		C = -self.a**2*(x**2 + y**2) + z**2 + self.r**2
@@ -490,11 +490,11 @@ class FastDgame(BaseGame):
 				m = root 
 				break
 		# m = cubic[1]
-		# print('m=%.5f'%m)
+		print('m=%.5f'%m)
 		# for root in cubic:
 		# 	print(root)
 		# print('\n')
-		# print(cm.sqrt(1j))
+
 		y1 =  cm.sqrt(2*m)/2 - cm.sqrt(-(2*p + 2*m + cm.sqrt(2)*q/cm.sqrt(m)))/2 - b/4
 		y2 =  cm.sqrt(2*m)/2 + cm.sqrt(-(2*p + 2*m + cm.sqrt(2)*q/cm.sqrt(m)))/2 - b/4
 		y3 = -cm.sqrt(2*m)/2 - cm.sqrt(-(2*p + 2*m - cm.sqrt(2)*q/cm.sqrt(m)))/2 - b/4
@@ -506,7 +506,7 @@ class FastDgame(BaseGame):
 		# print(y4)
 		# print('\n')
 
-		P = np.array([y1, 0, 0])
+		P = np.array([y1.real, 0, 0])
 		D1_ = np.array([0, -z, 0])
 		D2_ = np.array([0,  z, 0])
 		I_ = np.array([x, y, 0])
@@ -517,6 +517,7 @@ class FastDgame(BaseGame):
 		D2_I_ = I_ - D2_
 		D1_D2_ = D2_ - D1_
 
+		# print(I_P[0])
 		phi_1 = atan2(np.cross(D1_I_, D1_P)[-1], np.dot(D1_I_, D1_P))
 		phi_2 = atan2(np.cross(D2_I_, D2_P)[-1], np.dot(D2_I_, D2_P))
 		psi = atan2(np.cross(-D2_I_, I_P)[-1], np.dot(-D2_I_, I_P))
@@ -525,4 +526,5 @@ class FastDgame(BaseGame):
 		phi_2 += base['D1']
 		psi += base['I0']
 
-		return {'D0': phi_1, 'D1': phi_2, 'I0': psi}		
+		# return {'D0': phi_1, 'D1': phi_2, 'I0': psi}		
+		return cubic
