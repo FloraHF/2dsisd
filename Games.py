@@ -2,6 +2,7 @@ import os
 import numpy as np
 from copy import deepcopy
 from math import asin, acos, atan2, sin, cos, pi, sqrt
+import cmath as cm
 
 from tensorflow.keras.models import load_model
 
@@ -477,37 +478,51 @@ class FastDgame(BaseGame):
 		A = -self.a**2 + 1
 		B =  2*self.a**2*x 
 		C = -self.a**2*(x**2 + y**2) + z**2 + self.r**2
-		a, b, c, d, e = A**2, 2*A*B, B**2+2*A*C-4*self.r**2, 2*B*C, C**2-4*self.r**2*z**2
-		Dlt = 256*a**3*e**3 - 192*a**2*b*d*e**2 - 128*a**2*c**2*e**2 + 144*a**2*c*d**2*e - 27*a**2*d**4\
-			+ 144*a*b**2*c*e**2 - 6*a*b**2*d**2*e - 80*a*b*c**2*d*e + 18*a*b*c*d**3 + 16*a*c**4*e\
-			- 4*a*c**3*d**2 - 27*b**4*e**2 + 18*b**3*c*d*e - 4*b**3*d**3 - 4*b**2*c**3*e + b**2*c**2*d**2
-		P = 8*a*c - 3*b**2
-		R = b**3 + 8*d*a**2 - 4*a*b*c 
-		Dlt0 = c**2 - 3*b*d + 12*a*e 
-		D = 64*a**3*e - 16*a**2*c**2 + 16*a*b**2*c - 16*a**2*b*d - 3*b**4
-		roots = np.roots([a, b, c, d, e])
-		rs = []
-		for r in roots:
-			print(r)
-		if Dlt < 0:
-			print('two distinct real and two complex')
-		elif Dlt > 0:
-			if P<0 and D<0:
-				print('four distinct real')
-			else:
-				print('two pairs of complex')
-		else:
-			pass
-		print(Dlt)
-		print(P)
-		print(R)
-		print(Dlt0)
-		print(D)
-			# if abs(r.imag) < 1e-6:
-			# 	rs.appendr.real
-			# lhs = sqrt(r**2 + z**2) - r
-			# rhs = self.a*sqrt(y**2 + (r - x)**2)
-			# print(lhs, rhs)
+		a4, a3, a2, a1, a0 = A**2, 2*A*B, B**2+2*A*C-4*self.r**2, 2*B*C, C**2-4*self.r**2*z**2
+		b, c, d, e = a3/a4, a2/a4, a1/a4, a0/a4
+		p = (8*c - 3*b**2)/8
+		q = (b**3 - 4*b*c + 8*d)/8
+		r = (-3*b**4 + 256*e - 64*b*d + 16*b**2*c)/256
 
+		cubic = np.roots([8, 8*p, 2*p**2 - 8*r, -q**2])
+		for root in cubic:
+			if root.imag == 0 and root.real > 0:
+				m = root 
+				break
+		# m = cubic[1]
+		# print('m=%.5f'%m)
+		# for root in cubic:
+		# 	print(root)
+		# print('\n')
+		# print(cm.sqrt(1j))
+		y1 =  cm.sqrt(2*m)/2 - cm.sqrt(-(2*p + 2*m + cm.sqrt(2)*q/cm.sqrt(m)))/2 - b/4
+		y2 =  cm.sqrt(2*m)/2 + cm.sqrt(-(2*p + 2*m + cm.sqrt(2)*q/cm.sqrt(m)))/2 - b/4
+		y3 = -cm.sqrt(2*m)/2 - cm.sqrt(-(2*p + 2*m - cm.sqrt(2)*q/cm.sqrt(m)))/2 - b/4
+		y4 = -cm.sqrt(2*m)/2 + cm.sqrt(-(2*p + 2*m - cm.sqrt(2)*q/cm.sqrt(m)))/2 - b/4
 
-		# print(roots)
+		# print(y1)
+		# print(y2)
+		# print(y3)
+		# print(y4)
+		# print('\n')
+
+		P = np.array([y1, 0, 0])
+		D1_ = np.array([0, -z, 0])
+		D2_ = np.array([0,  z, 0])
+		I_ = np.array([x, y, 0])
+		D1_P = P - D1_
+		D2_P = P - D2_
+		I_P = P - I_
+		D1_I_ = I_ - D1_
+		D2_I_ = I_ - D2_
+		D1_D2_ = D2_ - D1_
+
+		phi_1 = atan2(np.cross(D1_I_, D1_P)[-1], np.dot(D1_I_, D1_P))
+		phi_2 = atan2(np.cross(D2_I_, D2_P)[-1], np.dot(D2_I_, D2_P))
+		psi = atan2(np.cross(-D2_I_, I_P)[-1], np.dot(-D2_I_, I_P))
+		# print(phi_1, phi_2, psi)
+		phi_1 += base['D0']
+		phi_2 += base['D1']
+		psi += base['I0']
+
+		return {'D0': phi_1, 'D1': phi_2, 'I0': psi}		
