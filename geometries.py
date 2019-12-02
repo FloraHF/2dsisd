@@ -26,6 +26,7 @@ class LineTarget(object):
 		self.type = 'line'
 
 	def level(self, x):
+		# print(x)
 		return x[1] - self.y0
 
 	def deepest_point_in_dr(self, dr, target=None):

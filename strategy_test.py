@@ -1,35 +1,37 @@
-import matplotlib.pyplot as plt
 import numpy as np
 from math import acos
-import cmath as cm
+
 from Games import FastDgame, SlowDgame
-from geometries import LineTarget, DominantRegion
+from geometries import LineTarget
 
+with open('config.csv', 'r') as f:
+	data = f.readlines()
+	for line in data:
+		if 'vd' in line:
+			vd = float(line.split(',')[-1])
+		if 'vi' in line:
+			vi = float(line.split(',')[-1])
+sim_dir = 'res2/'			
+xplot = dict()
 
-x0 = {'D0': np.array([-.5, 0.]), 'I0': np.array([-.0, .4]), 'D1': np.array([.5, 0.])}
-game = FastDgame(LineTarget(), None, ni=1, nd=2)
+if vd >= vi:
+	game = FastDgame(LineTarget(), sim_dir=sim_dir)
+	x0 = {'D0': np.array([-.6, 0.9]), 'I0': np.array([-.1, 1.2]), 'D1': np.array([.6, 0.9])}
+else:
+	game = SlowDgame(LineTarget(), sim_dir=sim_dir)
+	xref = game.generate_analytic_traj(.0, 5, acos(1/1.5)+0.2,0,0.1999999999, file='traj_param.csv')
+	for role, xs in xref.items():
+		for i, x in enumerate(xs):
+			xs[i] = x + np.array([0, .3])
+	x0 = {role: x[0] for role, x in xref.items()}
+	xplot['ref'] = xref
+	# x0 = {'D0': np.array([-.6, 0.9]), 'I0': np.array([-.1, 1.2]), 'D1': np.array([.6, 0.9])}
+ 
 game.reset(x0)
-# dr = DominantRegion(game.r, game.a, x0['I0'], [x0['D0'], x0['D1']])
-# xt = game.target.deepest_point_in_dr(dr)
-# print(dr.level(np.array([0,0])))
+tplay, xplay = game.advance(10.)
+xplot['play'] = xplay
+
+fname = '_'.join([strategy for role, strategy in game.pstrategy.items()])
+game.plotter.plot(xplot, 'play', ps=game.pstrategy, fname='traj_'+fname+'.png')
 
 
-ts_play, xs_play = game.advance(8., game.f_strategy, game.f_strategy, close_adjust=False)
-game.plotter.plot({'play':xs_play}, 'play', fname='play_traj.png', dr=True, ndr=0)
-
-
-cubs_real = [[], [], []]
-cubs_imag = [[], [], []]
-for x in np.linspace(1.5, -0.4, 100):
-	x0['I0'] = np.array([0., x])
-	cub = game.p_strategy(x0)
-	for c in cub:
-		print(c)
-	for i in range(3):
-		cubs_real[i].append(cub[i].real)
-		cubs_imag[i].append(cub[i].imag)
-fig, ax = plt.subplots()
-for i, (real, imag) in enumerate(zip(cubs_real, cubs_imag)):
-	ax.plot(np.asarray(real), np.asarray(imag), '.', color='b')
-plt.show()
-# game.plotter.animate(ts_play, xs_play, xrs=xs_play)

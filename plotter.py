@@ -73,9 +73,9 @@ class Plotter(object):
 					# self.ax.plot(xds[i][0], xds[i][1], 'x', color=self.colors[p], zorder=100)
 					self.ax.plot(xds[i][0], xds[i][1], 'x', color='k', zorder=100)
 
-		xt = self.game.deepest_in_target(xi, xds)
-		print(self.game.target.level(xt))
-		self.ax.plot(xt[0], xt[1], '<', color='k', zorder=200)
+		xt = self.game.deepest_in_target({'I0':xi, 'D0':xds[0], 'D1':xds[1]})
+		# print(self.game.target.level(xt))
+		# self.ax.plot(xt[0], xt[1], '<', color='k', zorder=200)
 
 	def plot_dcontour(self, xi, xds, levels=[0.]):
 
@@ -118,12 +118,14 @@ class Plotter(object):
 				self.ax.plot(x1[0], x1[1], 'o', color=self.colors[p1])
 				self.ax.plot(x2[0], x2[1], 'o', color=self.colors[p2])
 
-	def show_plot(self, fname=None):
+	def show_plot(self, xlim, ylim, fname=None):
 		self.ax.axis('equal')
 		self.ax.grid()
 		self.ax.tick_params(axis='both', which='major', labelsize=14)
 		plt.xlabel('x(m)', fontsize=14)
 		plt.ylabel('y(m)', fontsize=14)
+		self.ax.set_xlim(xlim)
+		self.ax.set_ylim(ylim)
 		plt.gca().legend(prop={'size': 12}, ncol=2)
 		if fname is not None:
 			self.fig.savefig(self.game.res_dir+fname)
@@ -140,10 +142,24 @@ class Plotter(object):
 				labels[role] = None
 		return labels
 
-	def plot(self, xs, geox, ps=None, dr=False, ndr=0, dcontour=False, fname=None):
+	def plot(self, xs, geox='', ps=None, dr=False, ndr=0, dcontour=False, fname=None):
 		# ps: policies dict: {'D0': , 'D1': , 'I': }
+		for k in xs:
+			pass
+		xmin = np.amin(np.array([x[:,0] for p, x in xs[k].items()]))
+		xmax = np.amax(np.array([x[:,0] for p, x in xs[k].items()]))
+		ymin = np.amin(np.array([x[:,1] for p, x in xs[k].items()]))
+		ymax = np.amax(np.array([x[:,1] for p, x in xs[k].items()]))
+		dx = (xmax - xmin)*0.2
+		dy = (ymax - ymin)*0.3
+
+		# fig = plt.figure()
+		xlim = (xmin-dx, xmax+dx)
+		ylim = (ymin-dy, ymax+dy)
+
 		ps = self.process_policy_labels(ps)
 
+		plot_geo = False
 		self.plot_target()
 		for situ, x in xs.items():
 			for pid, px in x.items():
@@ -151,17 +167,20 @@ class Plotter(object):
 				if 'D' in pid:
 					self.plot_capture_ring(pid, situ, px[-1, :])
 			if situ == geox:
+				plot_geo = True
 				self.plot_connect('I0', 'D0', x['I0'], x['D0'])
 				self.plot_connect('I0', 'D1', x['I0'], x['D1'])
 
-		xi0 = xs[geox]['I0'][ndr, :]
-		xd0s = [xs[geox]['D0'][ndr, :], xs[geox]['D1'][ndr, :]]
-		if dr:
-			self.plot_dr(xi0, xd0s, ind=True)
-		if dcontour:
-			self.plot_dcontour(xi0, xd0s)
+		if plot_geo: 
+			# print('here')
+			xi0 = xs[geox]['I0'][ndr, :]
+			xd0s = [xs[geox]['D0'][ndr, :], xs[geox]['D1'][ndr, :]]
+			if dr:
+				self.plot_dr(xi0, xd0s, ind=True)
+			if dcontour:
+				self.plot_dcontour(xi0, xd0s)
 
-		self.show_plot(fname=fname)
+		self.show_plot(xlim, ylim, fname=fname)
 
 	def animate(self, ts, xs, ps=None, xrs=None, linestyle=(0, ()), label='', alpha=0.5):
 		# print(xs)
@@ -255,7 +274,7 @@ class Plotter(object):
 		# ani = animation.ArtistAnimation(fig, ims, interval=50, blit=True,
 		#								 repeat_delay=1000)
 		ani.save(self.game.res_dir+'ani_traj.gif')
-		print(self.game.res_dir+'ani_traj.gif')
+		# print(self.game.res_dir+'ani_traj.gif')
 		plt.show()	
 
 
