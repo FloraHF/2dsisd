@@ -24,7 +24,7 @@ class Plotter(object):
 		self.a = game.a
 		self.target = game.target
 
-	def get_data(self, fn, midx=0, midy=0, kx=1., ky=1., n=50):
+	def get_data(self, fn, midx=0, midy=0, kx=1., ky=1., n=80):
 		x = np.linspace(midx+kx*self.xlim[0], midx+kx*self.xlim[1], n)
 		y = np.linspace(midy+ky*self.ylim[0], midy+ky*self.ylim[1], n)
 		X, Y = np.meshgrid(x, y)
@@ -89,13 +89,20 @@ class Plotter(object):
 		CC = self.ax.contour(vctr['X'], vctr['Y'], vctr['data'], [0], linestyles=(self.dcontour_specs['line'],))
 		self.ax.clabel(CC, inline=True, fontsize=10)
 		self.ax.contour(vctr['X'], vctr['Y'], vctr['data'], levels=levels, colors=(self.dcontour_specs['color'],), linestyles=(self.dcontour_specs['line'],))
-	
+		self.plot_capture_ring('D0', None, xds[0])
+		self.plot_capture_ring('D1', None, xds[1])
+
 	def plot_capture_ring(self, player, situation, x, n=50):
 		xs, ys = [], []
 		for t in np.linspace(0, 2*pi, n):
 			xs.append(x[0] + self.r*cos(t))
 			ys.append(x[1] + self.r*sin(t))
-		self.ax.plot(xs, ys, color=self.colors[player], linestyle=self.linestyles[situation])
+		if situation is None:
+			self.ax.plot(xs, ys, color=self.colors[player], linestyle=(0, ()))	
+			self.ax.plot(x[0], x[1], '.', color=self.colors[player], linestyle=(0, ()))	
+		else:
+			self.ax.plot(xs, ys, color=self.colors[player], linestyle=self.linestyles[situation])
+			self.ax.plot(x[0], x[1], '.', color=self.colors[player], linestyle=self.linestyles[situation])
 
 	def plot_traj(self, player, situation, xs, label=None):
 		if label is not None:
@@ -118,14 +125,16 @@ class Plotter(object):
 				self.ax.plot(x1[0], x1[1], 'o', color=self.colors[p1])
 				self.ax.plot(x2[0], x2[1], 'o', color=self.colors[p2])
 
-	def show_plot(self, xlim, ylim, fname=None):
+	def show_plot(self, xlim=None, ylim=None, fname=None):
 		self.ax.axis('equal')
 		self.ax.grid()
 		self.ax.tick_params(axis='both', which='major', labelsize=14)
 		plt.xlabel('x(m)', fontsize=14)
 		plt.ylabel('y(m)', fontsize=14)
-		self.ax.set_xlim(xlim)
-		self.ax.set_ylim(ylim)
+		if xlim is not None:
+			self.ax.set_xlim(xlim)
+		if ylim is not None:
+			self.ax.set_ylim(ylim)
 		plt.gca().legend(prop={'size': 12}, ncol=2)
 		if fname is not None:
 			self.fig.savefig(self.game.res_dir+fname)
@@ -142,34 +151,39 @@ class Plotter(object):
 				labels[role] = None
 		return labels
 
-	def plot(self, xs, geox='', ps=None, dr=False, ndr=0, dcontour=False, fname=None):
+	def plot(self, xs, geox='', ps=None, traj=True, dr=False, ndr=0, dcontour=False, fname=None):
 		# ps: policies dict: {'D0': , 'D1': , 'I': }
-		for k in xs:
-			pass
-		xmin = np.amin(np.array([x[:,0] for p, x in xs[k].items()]))
-		xmax = np.amax(np.array([x[:,0] for p, x in xs[k].items()]))
-		ymin = np.amin(np.array([x[:,1] for p, x in xs[k].items()]))
-		ymax = np.amax(np.array([x[:,1] for p, x in xs[k].items()]))
-		dx = (xmax - xmin)*0.2
-		dy = (ymax - ymin)*0.3
 
-		# fig = plt.figure()
-		xlim = (xmin-dx, xmax+dx)
-		ylim = (ymin-dy, ymax+dy)
-
-		ps = self.process_policy_labels(ps)
-
-		plot_geo = False
 		self.plot_target()
-		for situ, x in xs.items():
-			for pid, px in x.items():
-				self.plot_traj(pid, situ, px, label=ps[pid])
-				if 'D' in pid:
-					self.plot_capture_ring(pid, situ, px[-1, :])
-			if situ == geox:
-				plot_geo = True
-				self.plot_connect('I0', 'D0', x['I0'], x['D0'])
-				self.plot_connect('I0', 'D1', x['I0'], x['D1'])
+
+		if traj:
+
+			plot_geo = False
+			ps = self.process_policy_labels(ps)
+			for k in xs:
+				pass
+			xmin = np.amin(np.array([x[:,0] for p, x in xs[k].items()]))
+			xmax = np.amax(np.array([x[:,0] for p, x in xs[k].items()]))
+			ymin = np.amin(np.array([x[:,1] for p, x in xs[k].items()]))
+			ymax = np.amax(np.array([x[:,1] for p, x in xs[k].items()]))
+			dx = (xmax - xmin)*0.2
+			dy = (ymax - ymin)*0.3
+			# fig = plt.figure()
+			xlim = (xmin-dx, xmax+dx)
+			ylim = (ymin-dy, ymax+dy)
+
+			for situ, x in xs.items():
+				for pid, px in x.items():
+					self.plot_traj(pid, situ, px, label=ps[pid])
+					if 'D' in pid:
+						self.plot_capture_ring(pid, situ, px[-1, :])
+				if situ == geox:
+					plot_geo = True
+					self.plot_connect('I0', 'D0', x['I0'], x['D0'])
+					self.plot_connect('I0', 'D1', x['I0'], x['D1'])
+		else:
+			xlim, ylim = None, None
+			plot_geo = True
 
 		if plot_geo: 
 			# print('here')

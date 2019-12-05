@@ -16,6 +16,7 @@ def Iwin_wrapper(strategy):
 			return acts
 		else:
 			acts = strategy(args[0], args[1])
+			# print(strategy.__name__)
 			for role in args[0].players:
 				acts['p_'+role] = strategy.__name__
 			return acts
@@ -138,7 +139,7 @@ def mixWrapper(dstrategy, istrategy):
 				action['p_'+role] = dact['p_'+role]
 			if 'I' in role:
 				action['p_'+role] = iact['p_'+role]
-
+		# print(action)
 		return action
 
 	return wrapper	

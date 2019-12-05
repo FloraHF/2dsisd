@@ -109,6 +109,20 @@ class BaseGame(object):
 					if 'istrategy' in line:
 						self.istrategy = line.split(',')[1].rstrip()
 
+			fname = self.res_dir+'traj_param.csv'
+			if os.path.exists(fname):
+				os.remove(fname)
+
+			with open(fname, 'a') as f:
+				f.write('vd,%.3f\n'%self.vd)
+				f.write('vi,%.3f\n'%self.vi)
+				f.write('rc,%.3f\n'%self.r)
+				# f.write('rt,%.3f\n'%self.rt)
+				f.write('r_close,%.3f\n'%(self.r_close/self.r))
+				f.write('k_close,%.3f\n'%self.k_close)
+
+
+
 							
 		# print(self.istrategy)
 		self.target = target
@@ -290,7 +304,7 @@ class SlowDgame(BaseGame):
 		self.policy_dict['nn'] = self.nn_strategy
 		self.policy_dict['w'] = self.w_strategy
 		self.policy_dict['h'] = self.h_strategy
-		self.strategy = closeWrapper(self.policy_dict[self.dstrategy], self.policy_dict[self.dstrategy])
+		self.strategy = closeWrapper(self.policy_dict[self.dstrategy], self.policy_dict[self.istrategy])
 
 	def generate_analytic_traj(self, S, T, gmm, D, delta, n=50, file='traj_param_100.csv', usage='sim'):
 		assert S >= self.s_lb
@@ -302,17 +316,15 @@ class SlowDgame(BaseGame):
 			if not os.path.exists('params/'):
 				os.mkdir('params/')
 		elif usage == 'sim':
-			fname = self.res_dir + file
-		if os.path.exists(fname):
-			os.remove(fname)
+			fname = self.res_dir + 'traj_param.csv'
 
 		with open(fname, 'a') as f:
-			f.write('vd,%.3f\n'%self.vd)
-			f.write('vi,%.3f\n'%self.vi)
-			f.write('rc,%.3f\n'%self.r)
-			# f.write('rt,%.3f\n'%self.rt)
-			f.write('r_close,%.3f\n'%(self.r_close/self.r))
-			f.write('k_close,%.3f\n'%self.k_close)
+			# f.write('vd,%.3f\n'%self.vd)
+			# f.write('vi,%.3f\n'%self.vi)
+			# f.write('rc,%.3f\n'%self.r)
+			# # f.write('rt,%.3f\n'%self.rt)
+			# f.write('r_close,%.3f\n'%(self.r_close/self.r))
+			# f.write('k_close,%.3f\n'%self.k_close)
 
 			f.write('S,%.10f\n'%S)
 			f.write('T,%.10f\n'%T)
@@ -436,6 +448,7 @@ class SlowDgame(BaseGame):
 		x = np.concatenate((xs['D0'], xs['I0'], xs['D1']))
 		for role, p in self.policies.items():
 			acts[role] = p.predict(x[None])[0]
+		# print('nn')
 		return acts
 
 	@Iwin_wrapper
@@ -547,14 +560,16 @@ class FastDgame(BaseGame):
 	"""docstring for FastDgame"""
 	def __init__(self, target, ni=1, nd=2, exp_dir=None, sim_dir=None):
 		super(FastDgame, self).__init__(target, gtype='fastD', exp_dir=exp_dir, sim_dir=sim_dir, ni=ni, nd=nd)
-		self.strategy = mixWrapper(self.policy_dict[self.dstrategy], self.policy_dict[self.dstrategy])
+		self.strategy = mixWrapper(self.policy_dict[self.dstrategy], self.policy_dict[self.istrategy])
 
 	def deepest_in_target(self, xs):
+		# print('hi')
 		dr = DominantRegion(self.r, self.a, xs['I0'], (xs['D0'], xs['D1']))
 		return self.target.deepest_point_in_dr(dr, target=self.target)
 
 	def f_strategy(self, xs):
 		xt = self.deepest_in_target(xs)
+
 		xi, xds = xs['I0'], (xs['D0'], xs['D1'])
 
 		IT = np.concatenate((xt - xi, np.zeros((1,))))
