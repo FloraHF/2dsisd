@@ -90,8 +90,9 @@ class BaseGame(object):
 			self.res_dir = self.res_dir + sim_dir
 			if not os.path.exists(self.res_dir):
 				os.mkdir(self.res_dir)
-
+			# print(os.path.dirname(__file__)+'/config.csv')
 			with open(os.path.dirname(__file__)+'/config.csv', 'r') as f:
+				# print('reading')
 				data = f.readlines()
 				for line in data:
 					if 'vd' in line:

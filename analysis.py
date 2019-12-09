@@ -13,11 +13,11 @@ def play_fastD_game(xd0, xi, xd1, ni=1, nd=2):
 	game.plotter.animate(ts_play, xs_play, xrs=xs_play)
 
 def generate_data_for_exp(S, T, gmm, D, delta, ni=1, nd=2, param_file='traj_param_100.csv'):
-	game = SlowDgame(LineTarget(), None, ni=ni, nd=nd)
+	game = SlowDgame(LineTarget(), sim_dir='res5/')
 	xs_ref = game.generate_analytic_traj(S, T, gmm, D, delta, file=param_file)
-	game.reset({'D0': xs_ref['D0'][0,:], 'I0': xs_ref['I0'][0,:], 'D1': xs_ref['D1'][0,:]})
-	ts, xs_play = game.advance(8., game.nn_strategy, game.nn_strategy, close_adjust=True)
-	game.plotter.plot({'ref':xs_ref, 'play':xs_play}, 'play')
+	# game.reset({'D0': xs_ref['D0'][0,:], 'I0': xs_ref['I0'][0,:], 'D1': xs_ref['D1'][0,:]})
+	# ts, xs_play = game.advance(8., game.nn_strategy, game.nn_strategy, close_adjust=True)
+	# game.plotter.plot({'ref':xs_ref, 'play':xs_play}, 'play')
 
 def replay_exp(res_dir='res1/', ni=1, nd=2):
 	x0s = dict()
@@ -56,6 +56,6 @@ def replay_exp(res_dir='res1/', ni=1, nd=2):
 
 if __name__ == '__main__':
 
-	# generate_data_for_exp(-0.05, 5, acos(1/1.5)+0.1,0,0.09999999,param_file='traj_param_3.csv')
-	play_fastD_game(np.array([-1, 0]), np.array([-0.2, 0.5]), np.array([1, 0]))
+	generate_data_for_exp(-0.05, 5, acos(1/1.5)+0.1,0,0.09999999,param_file='traj_param_5.csv')
+	# play_fastD_game(np.array([-1, 0]), np.array([-0.2, 0.5]), np.array([1, 0]))
 	# replay_exp(res_dir='res5/', ni=1, nd=2)
