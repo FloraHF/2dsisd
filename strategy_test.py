@@ -11,7 +11,7 @@ with open('config.csv', 'r') as f:
 			vd = float(line.split(',')[-1])
 		if 'vi' in line:
 			vi = float(line.split(',')[-1])
-sim_dir = 'res4/'			
+sim_dir = 'res5/'			
 xplot = dict()
 
 if vd >= vi:
