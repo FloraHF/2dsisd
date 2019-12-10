@@ -13,18 +13,22 @@ def play_fastD_game(xd0, xi, xd1, ni=1, nd=2, param_file='traj_param_100.csv'):
 	ts_play, xs_play = game.advance(8.)
 	fname = '_'.join([strategy for role, strategy in game.pstrategy.items()])
 	figid = param_file.split('.')[0].split('_')[-1]
-	game.plotter.plot(xs={'play': xs_play}, geox='play', ps=game.pstrategy, traj=True, fname='traj_'+fname+'_'+figid+'.png')
+	game.plotter.plot(xs={'play': xs_play}, geox='play', ps=game.pstrategy, dr=True, traj=True, fname='traj_'+fname+'_'+figid+'.png')
 
 def generate_data_for_exp(S, T, gmm, D, delta, ni=1, nd=2, param_file='traj_param_100.csv'):
 	game = SlowDgame(LineTarget())
-	xs_ref = game.generate_analytic_traj(S, T, gmm, D, delta, file=param_file)
-	game.reset({'D0': xs_ref['D0'][0,:], 'I0': xs_ref['I0'][0,:], 'D1': xs_ref['D1'][0,:]})
-	ts, xs_play = game.advance(8.)
+	# xs_ref = game.generate_analytic_traj(S, T, gmm, D, delta, file=param_file)
+	# game.reset({'D0': xs_ref['D0'][0,:], 'I0': xs_ref['I0'][0,:], 'D1': xs_ref['D1'][0,:]})
+	# ts, xs_play = game.advance(8.)
 
-	xplot = {'play': xs_play, 'ref': xs_ref}
+	# xplot = {'play': xs_play, 'ref': xs_ref}
+	game.reset({'D0': np.array([-0.85, 0.001]), 'I0': np.array([-0.2, 0.57]), 'D1': np.array([0.85, 0.001])})
+	ts, xs_play = game.advance(8.)
+	xplot = {'play': xs_play}
+
 	fname = '_'.join([strategy for role, strategy in game.pstrategy.items()])
 	figid = param_file.split('.')[0].split('_')[-1]
-	game.plotter.plot(xs=xplot, geox='play', ps=game.pstrategy, traj=True, fname='traj_'+fname+'_'+figid+'.png')
+	game.plotter.plot(xs=xplot, geox='play', ps=game.pstrategy, traj=True, dr=True, fname='traj_'+fname+'_'+figid+'.png')
 
 def replay_exp(res_dir='res1/', ni=1, nd=2):
 	x0s = dict()
