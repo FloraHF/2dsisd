@@ -47,73 +47,25 @@ class Player(object):
 
 class BaseGame(object):
 	"""docstring for BaseGame"""
-	def __init__(self, target, gtype, exp_dir=None, sim_dir=None, ni=1, nd=2):
+	def __init__(self, target, exp_dir=None, sim_dir=None, ni=1, nd=2):
 
 		if exp_dir is not None:
 			self.res_dir = os.path.dirname(__file__)+'/exp_results/'+exp_dir
-			with open(self.res_dir+'/info.csv', 'r') as f:
-				data = f.readlines()
-				for line in data:
-					if 'vd' in line:
-						self.vd = float(line.split(',')[-1])
-					if 'vi' in line:
-						self.vi = float(line.split(',')[-1])
-					if 'rc' in line:
-						self.r = float(line.split(',')[-1])
-					if 'r_close' in line:
-						self.r_close = float(line.split(',')[-1])*self.r
-					if 'k_close' in line:
-						self.k_close = float(line.split(',')[-1])	
-					if 'dstrategy' in line:
-						self.dstrategy = line.split(',')[1].rstrip()
-					if 'istrategy' in line:
-						self.istrategy = line.split(',')[1].rstrip()
-					if 'S' in line:
-						self.exp_S = float(line.split(',')[-1])
-					if 'T' in line:
-						self.exp_T = float(line.split(',')[-1])
-					if 'gmm' in line:
-						self.exp_gmm = float(line.split(',')[-1])
-						# print('ub:', self.exp_gmm - acos(self.vd/self.vi))
-					if 'D' == line.split(',')[0]:
-						self.exp_D = float(line.split(',')[-1])*self.r
-					if 'delta' in line:
-						delta = float(line.split(',')[-1])
-						if delta > self.exp_gmm - acos(self.vd/self.vi):
-							delta = self.exp_gmm - acos(self.vd/self.vi)					
-						self.exp_delta = delta
+			self.read_data(self.res_dir+'/info.csv')
 
 		elif sim_dir is not None:
+			self.read_data(os.path.dirname(__file__)+'/config.csv')
+
 			self.res_dir = os.path.dirname(__file__)+'/sim_results/'
 			if not os.path.exists(self.res_dir):
 				os.mkdir(self.res_dir)
 			self.res_dir = self.res_dir + sim_dir
 			if not os.path.exists(self.res_dir):
 				os.mkdir(self.res_dir)
-			# print(os.path.dirname(__file__)+'/config.csv')
-			with open(os.path.dirname(__file__)+'/config.csv', 'r') as f:
-				# print('reading')
-				data = f.readlines()
-				for line in data:
-					if 'vd' in line:
-						self.vd = float(line.split(',')[-1])
-					if 'vi' in line:
-						self.vi = float(line.split(',')[-1])
-					if 'rc' in line:
-						self.r = float(line.split(',')[-1])
-					if 'r_close' in line:
-						self.r_close = float(line.split(',')[-1])*self.r
-					if 'k_close' in line:
-						self.k_close = float(line.split(',')[-1])
-					if 'dstrategy' in line:
-						self.dstrategy = line.split(',')[1].rstrip()
-					if 'istrategy' in line:
-						self.istrategy = line.split(',')[1].rstrip()
 
 			fname = self.res_dir+'traj_param.csv'
 			if os.path.exists(fname):
 				os.remove(fname)
-
 			with open(fname, 'a') as f:
 				f.write('vd,%.3f\n'%self.vd)
 				f.write('vi,%.3f\n'%self.vi)
@@ -121,8 +73,11 @@ class BaseGame(object):
 				# f.write('rt,%.3f\n'%self.rt)
 				f.write('r_close,%.3f\n'%(self.r_close/self.r))
 				f.write('k_close,%.3f\n'%self.k_close)
-
-
+		else:
+			self.read_data(os.path.dirname(__file__)+'/config.csv')
+			self.res_dir = os.path.dirname(__file__)+'/params/'
+			if not os.path.exists(self.res_dir):
+				os.mkdir(self.res_dir)
 
 							
 		# print(self.istrategy)
@@ -152,6 +107,38 @@ class BaseGame(object):
 
 		self.plotter = Plotter(self, target, self.a, self.r)
 		# def strategy(self, xs, dstrategy=m_strategy, istrategy=m_strategy):
+
+	def read_data(self, file):
+		with open(file, 'r') as f:
+			data = f.readlines()
+			for line in data:
+				if 'vd' in line:
+					self.vd = float(line.split(',')[-1])
+				if 'vi' in line:
+					self.vi = float(line.split(',')[-1])
+				if 'rc' in line:
+					self.r = float(line.split(',')[-1])
+				if 'r_close' in line:
+					self.r_close = float(line.split(',')[-1])*self.r
+				if 'k_close' in line:
+					self.k_close = float(line.split(',')[-1])
+				if 'dstrategy' in line:
+					self.dstrategy = line.split(',')[1].rstrip()
+				if 'istrategy' in line:
+					self.istrategy = line.split(',')[1].rstrip()
+				if 'S' in line:
+					self.exp_S = float(line.split(',')[-1])
+				if 'T' in line:
+					self.exp_T = float(line.split(',')[-1])
+				if 'gmm' in line:
+					self.exp_gmm = float(line.split(',')[-1])
+					# print('ub:', self.exp_gmm - acos(self.vd/self.vi))
+				if 'D' == line.split(',')[0]:
+					self.exp_D = float(line.split(',')[-1])
+				if 'delta' in line:
+					delta = float(line.split(',')[-1])
+					if delta > self.exp_gmm - acos(self.vd/self.vi):
+						delta = self.exp_gmm - acos(self.vd/self.vi)					
 
 	def is_capture(self, xi, xds):
 		cap = False
@@ -294,7 +281,7 @@ class BaseGame(object):
 class SlowDgame(BaseGame):
 	"""docstring for SlowDgame"""
 	def __init__(self, target, exp_dir=None, sim_dir=None, policy_dir='PolicyFn', ni=1, nd=2):
-		super(SlowDgame, self).__init__(target, gtype='slowD', exp_dir=exp_dir, sim_dir=sim_dir, ni=ni, nd=nd)
+		super(SlowDgame, self).__init__(target, exp_dir=exp_dir, sim_dir=sim_dir, ni=ni, nd=nd)
 
 		self.policies = dict()
 		for role, p in self.players.items():
@@ -307,32 +294,42 @@ class SlowDgame(BaseGame):
 		self.policy_dict['h'] = self.h_strategy
 		self.strategy = closeWrapper(self.policy_dict[self.dstrategy], self.policy_dict[self.istrategy])
 
-	def generate_analytic_traj(self, S, T, gmm, D, delta, n=50, file='traj_param_100.csv', usage='sim'):
+	def generate_traj_for_learning(self, S, T, gmm, D, delta, n=30):
+		assert S >= self.s_lb
+		assert gmm >= self.gmm_lb
+		xxs = self.analytic_traj.envelope_traj(S, T, gmm, D, delta, n=n)
+		for xs in xxs:
+			for i in range(len(xs)):
+				for j in [0, 2, 4]:
+					xs[i, j] += self.target.x0
+				for j in [1, 3, 5]:
+					xs[i, j] += self.target.y0		
+		return xxs
+
+	def generate_analytic_traj(self, S, T, gmm, D, delta, n=50, file='traj_param_100.csv'):
 		assert S >= self.s_lb
 		assert gmm >= self.gmm_lb
 		xs, _ = self.analytic_traj.envelope_traj(S, T, gmm, D, delta, n=n)
-
-		if usage == 'exp':
-			fname = 'params/'+file
-			if not os.path.exists('params/'):
-				os.mkdir('params/')
-		elif usage == 'sim':
-			fname = self.res_dir + 'traj_param.csv'
+		for i in range(len(xs)):
+			for j in [0, 2, 4]:
+				xs[i, j] += self.target.x0
+			for j in [1, 3, 5]:
+				xs[i, j] += self.target.y0
+		fname = self.res_dir + file
+		if os.path.exists(fname):
+			os.remove(fname)
 
 		with open(fname, 'a') as f:
-			# f.write('vd,%.3f\n'%self.vd)
-			# f.write('vi,%.3f\n'%self.vi)
-			# f.write('rc,%.3f\n'%self.r)
-			# # f.write('rt,%.3f\n'%self.rt)
-			# f.write('r_close,%.3f\n'%(self.r_close/self.r))
-			# f.write('k_close,%.3f\n'%self.k_close)
-
+			f.write('vd,%.3f\n'%self.vd)
+			f.write('vi,%.3f\n'%self.vi)
+			f.write('rc,%.3f\n'%self.r)
+			f.write('r_close,%.3f\n'%(self.r_close/self.r))
+			f.write('k_close,%.3f\n'%self.k_close)
 			f.write('S,%.10f\n'%S)
 			f.write('T,%.10f\n'%T)
 			f.write('gmm,%.10f\n'%gmm)
 			f.write('D,%.10f\n'%D)
 			f.write('delta,%.10f\n'%delta)
-
 			f.write('xD0,' + ','.join(list(map(str,xs[0,:2]))) + '\n')
 			f.write('xD1,' + ','.join(list(map(str,xs[0,4:]))) + '\n')
 			f.write('xI0,' + ','.join(list(map(str,xs[0,2:4]))) + '\n')
@@ -447,6 +444,11 @@ class SlowDgame(BaseGame):
 	def nn_strategy(self, xs):
 		acts = dict()
 		x = np.concatenate((xs['D0'], xs['I0'], xs['D1']))
+		for i in [0, 2, 4]:
+			x[i] -= self.target.x0
+		for i in [1, 3, 5]:
+			x[i] -= self.target.y0
+
 		for role, p in self.policies.items():
 			acts[role] = p.predict(x[None])[0]
 		# print('nn')
@@ -560,13 +562,29 @@ class SlowDgame(BaseGame):
 class FastDgame(BaseGame):
 	"""docstring for FastDgame"""
 	def __init__(self, target, ni=1, nd=2, exp_dir=None, sim_dir=None):
-		super(FastDgame, self).__init__(target, gtype='fastD', exp_dir=exp_dir, sim_dir=sim_dir, ni=ni, nd=nd)
+		super(FastDgame, self).__init__(target, exp_dir=exp_dir, sim_dir=sim_dir, ni=ni, nd=nd)
 		self.strategy = mixWrapper(self.policy_dict[self.dstrategy], self.policy_dict[self.istrategy])
+
+
+	def record_data(self, x0, file='traj_param.csv'):
+		fname = self.res_dir + file
+		if os.path.exists(fname):
+			os.remove(fname)
+		with open(fname, 'a') as f:
+			f.write('vd,%.3f\n'%self.vd)
+			f.write('vi,%.3f\n'%self.vi)
+			f.write('rc,%.3f\n'%self.r)
+			f.write('r_close,%.3f\n'%(self.r_close/self.r))
+			f.write('k_close,%.3f\n'%self.k_close)
+			f.write('xD0,' + ','.join(list(map(str,x0['D0']))) + '\n')
+			f.write('xD1,' + ','.join(list(map(str,x0['D1']))) + '\n')
+			f.write('xI0,' + ','.join(list(map(str,x0['I0']))) + '\n')
 
 	def deepest_in_target(self, xs):
 		# print('hi')
 		dr = DominantRegion(self.r, self.a, xs['I0'], (xs['D0'], xs['D1']))
-		return self.target.deepest_point_in_dr(dr, target=self.target)
+		# return self.target.deepest_point_in_dr(dr, target=self.target)
+		return self.target.deepest_point_in_dr(dr)
 
 	def f_strategy(self, xs):
 		xt = self.deepest_in_target(xs)

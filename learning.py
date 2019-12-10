@@ -10,10 +10,14 @@ from keras.layers import Dense
 from keras.models import load_model
 from tensorflow.keras.losses import MeanSquaredError
 
-from envelope import envelope_traj, envelope_policy, w
+# from envelope import envelope_traj, envelope_policy, w
+from Games import slowDgame
+from geometries import LineTarget
 
 BARRIER_DIR = 'BarrierFn'
 POLICY_DIR = 'Policies/PolicyFn'
+
+game = slowDgame(LineTarget())
 
 def network(n_in, ns, act_fns):
 	model = Sequential()

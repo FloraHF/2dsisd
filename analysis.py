@@ -1,23 +1,30 @@
 import numpy as np
+import time
 from math import acos
 from Games import FastDgame, SlowDgame
-from geometries import LineTarget
+from geometries import LineTarget, CircleTarget
 
-def play_fastD_game(xd0, xi, xd1, ni=1, nd=2):
-	game = FastDgame(LineTarget(), None, ni=ni, nd=nd)
-	game.reset({'D0': xd0, 'I0': xi, 'D1': xd1})
-	ts_play, xs_play = game.advance(5., game.f_strategy, game.f_strategy, close_adjust=False)
-	# ts_exp,xs_exp  = game.replay_exp()
-	## xs_play = np.concatenate((xds[0], xis[0], xds[1]),-1)
-	game.plotter.plot({'play':xs_play}, 'play', fname='play_traj.png')
-	game.plotter.animate(ts_play, xs_play, xrs=xs_play)
+def play_fastD_game(xd0, xi, xd1, ni=1, nd=2, param_file='traj_param_100.csv'):
+	game = FastDgame(LineTarget())
+	x0 = {'D0': xd0, 'I0': xi, 'D1': xd1}
+	game.reset(x0)
+	game.record_data(x0, file=param_file)
+
+	ts_play, xs_play = game.advance(8.)
+	fname = '_'.join([strategy for role, strategy in game.pstrategy.items()])
+	figid = param_file.split('.')[0].split('_')[-1]
+	game.plotter.plot(xs={'play': xs_play}, geox='play', ps=game.pstrategy, traj=True, fname='traj_'+fname+'_'+figid+'.png')
 
 def generate_data_for_exp(S, T, gmm, D, delta, ni=1, nd=2, param_file='traj_param_100.csv'):
-	game = SlowDgame(LineTarget(), sim_dir='res5/')
+	game = SlowDgame(LineTarget())
 	xs_ref = game.generate_analytic_traj(S, T, gmm, D, delta, file=param_file)
-	# game.reset({'D0': xs_ref['D0'][0,:], 'I0': xs_ref['I0'][0,:], 'D1': xs_ref['D1'][0,:]})
-	# ts, xs_play = game.advance(8., game.nn_strategy, game.nn_strategy, close_adjust=True)
-	# game.plotter.plot({'ref':xs_ref, 'play':xs_play}, 'play')
+	game.reset({'D0': xs_ref['D0'][0,:], 'I0': xs_ref['I0'][0,:], 'D1': xs_ref['D1'][0,:]})
+	ts, xs_play = game.advance(8.)
+
+	xplot = {'play': xs_play, 'ref': xs_ref}
+	fname = '_'.join([strategy for role, strategy in game.pstrategy.items()])
+	figid = param_file.split('.')[0].split('_')[-1]
+	game.plotter.plot(xs=xplot, geox='play', ps=game.pstrategy, traj=True, fname='traj_'+fname+'_'+figid+'.png')
 
 def replay_exp(res_dir='res1/', ni=1, nd=2):
 	x0s = dict()
@@ -56,6 +63,10 @@ def replay_exp(res_dir='res1/', ni=1, nd=2):
 
 if __name__ == '__main__':
 
-	generate_data_for_exp(-0.05, 5, acos(1/1.5)+0.1,0,0.09999999,param_file='traj_param_5.csv')
-	# play_fastD_game(np.array([-1, 0]), np.array([-0.2, 0.5]), np.array([1, 0]))
+	t0 = time.clock()
+	generate_data_for_exp(-0.02, 5.3, acos(1/1.5)+0.2, 0, 0.189999999, param_file='traj_param_xx.csv')
+	# play_fastD_game(np.array([-.85, -0.3]), np.array([-0.2, 0.1]), np.array([.85, -0.3]), param_file='traj_param_00.csv')
 	# replay_exp(res_dir='res5/', ni=1, nd=2)
+
+	t1 = time.clock()
+	print(t1 - t0)

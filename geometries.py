@@ -21,7 +21,8 @@ class DominantRegion(object):
 
 class LineTarget(object):
 	"""docstring for LineTarget"""
-	def __init__(self, y0=0):
+	def __init__(self, x0=0.0, y0=-0.5):
+		self.x0 = x0
 		self.y0 = y0
 		self.type = 'line'
 
@@ -41,14 +42,23 @@ class LineTarget(object):
 		return sol.x
 
 class CircleTarget():
-	def __init__(self, R):
+	def __init__(self, R, x0=0.0, y0=-0.5):
+		self.x0 = x0
+		self.y0 = y0
 		self.R = R
 		self.type = 'circle'
 
 	def level(self, x):
-		return sqrt(x[0]**2 + x[1]**2) - self.R	
+		return sqrt((x[0]-self.x0)**2 + (x[1]-self.y0)**2) - self.R	
 
-	def deepest_point_in_dr(self, dr):
-		in_dr = NonlinearConstraint(dr.level, -np.inf, 0)
+	def deepest_point_in_dr(self, dr, target=None):
+		if target is not None:
+			def obj(x):
+				return max(dr.level(x), -target.level(x))
+		else:
+			def obj(x):
+				return dr.level(x)
+		in_dr = NonlinearConstraint(obj, -np.inf, 0)
+		# in_dr = NonlinearConstraint(dr.level, -np.inf, 0)
 		sol = minimize(self.level, dr.xi, constraints=(in_dr,))
 		return sol.x

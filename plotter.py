@@ -23,6 +23,7 @@ class Plotter(object):
 		self.r = game.r
 		self.a = game.a
 		self.target = game.target
+		print(self.target.y0)
 
 	def get_data(self, fn, midx=0, midy=0, kx=1., ky=1., n=80):
 		x = np.linspace(midx+kx*self.xlim[0], midx+kx*self.xlim[1], n)
@@ -39,7 +40,7 @@ class Plotter(object):
 			kx, ky = 2.5, 1.
 		else:
 			kx, ky = 3., 3.
-		tgt = self.get_data(self.target.level, kx=kx, ky=ky)
+		tgt = self.get_data(self.target.level, midx=self.target.x0, midy=-.5, kx=kx, ky=ky)
 		CT = self.ax.contour(tgt['X'], tgt['Y'], tgt['data'], [0], linestyles=(self.target_specs['line'],))
 		plt.contour(CT, levels = [0], colors=(self.target_specs['color'],), linestyles=(self.target_specs['line'],))
 
@@ -155,6 +156,7 @@ class Plotter(object):
 		# ps: policies dict: {'D0': , 'D1': , 'I': }
 
 		self.plot_target()
+		# print(self.target.level(np.array([0, -0.6])))
 
 		if traj:
 
