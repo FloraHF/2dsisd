@@ -13,7 +13,7 @@ def play_fastD_game(xd0, xi, xd1, ni=1, nd=2, param_file='traj_param_100.csv'):
 	ts_play, xs_play = game.advance(8.)
 	fname = '_'.join([strategy for role, strategy in game.pstrategy.items()])
 	figid = param_file.split('.')[0].split('_')[-1]
-	game.plotter.plot(xs={'play': xs_play}, geox='play', ps=game.pstrategy, dr=True, traj=True, fname='traj_'+fname+'_'+figid+'.png')
+	game.plotter.plot(xs={'play': xs_play}, geox='play', ps=game.pstrategy, dcontour=True, traj=True, fname='traj_'+fname+'_'+figid+'.png')
 
 def generate_data_for_exp(S, T, gmm, D, delta, ni=1, nd=2, param_file='traj_param_100.csv'):
 	game = SlowDgame(LineTarget())
@@ -68,8 +68,8 @@ def replay_exp(res_dir='res1/', ni=1, nd=2):
 if __name__ == '__main__':
 
 	t0 = time.clock()
-	generate_data_for_exp(-0.02, 5.3, acos(1/1.5)+0.2, 0, 0.189999999, param_file='traj_param_xx.csv')
-	# play_fastD_game(np.array([-.85, -0.3]), np.array([-0.2, 0.1]), np.array([.85, -0.3]), param_file='traj_param_00.csv')
+	# generate_data_for_exp(-0.02, 5.3, acos(1/1.5)+0.2, 0, 0.189999999, param_file='traj_param_xx.csv')
+	play_fastD_game(np.array([-.85, -0.3]), np.array([-0.2, 0.1]), np.array([.85, -0.3]), param_file='traj_param_0x.csv')
 	# replay_exp(res_dir='res5/', ni=1, nd=2)
 
 	t1 = time.clock()

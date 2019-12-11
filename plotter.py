@@ -31,6 +31,7 @@ class Plotter(object):
 		X, Y = np.meshgrid(x, y)
 		D = np.zeros(np.shape(X))
 		for i, (xx, yy) in enumerate(zip(X, Y)):
+			print(i)
 			for j, (xxx, yyy) in enumerate(zip(xx, yy)):
 				D[i,j] = fn(np.array([xxx, yyy]))
 		return {'X': X, 'Y': Y, 'data': D}

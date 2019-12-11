@@ -83,7 +83,7 @@ class BaseGame(object):
 		# print(self.istrategy)
 		self.target = target
 		self.a = self.vd/self.vi
-		self.gmm0 = acos(self.a)
+		# self.gmm0 = acos(self.a)
 		self.gmm = acos(min(self.a, 1))
 		self.dt = 0.1
 		self.ni = ni
@@ -391,9 +391,9 @@ class SlowDgame(BaseGame):
 
 		phi_1 = -(pi/2 - a1)
 		phi_2 =  (pi/2 - a2)
-		delta = (tht - (a1 + a2) - pi + 2*self.gmm0)/2
+		delta = (tht - (a1 + a2) - pi + 2*self.gmm)/2
 		psi_min = -(tht - (a1 + pi/2 - self.f))
-		psi_max = -(a2 + pi/2 - self.gmm0)
+		psi_max = -(a2 + pi/2 - self.gmm)
 
 		I_T = np.concatenate((self.projection_on_target(xs['I0']) - xs['I0'], [0]))
 		angT = atan2(np.cross(-D2_I, I_T)[-1], np.dot(-D2_I, I_T))
