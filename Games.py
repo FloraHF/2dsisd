@@ -137,9 +137,9 @@ class BaseGame(object):
 				if 'D' == line.split(',')[0]:
 					self.exp_D = float(line.split(',')[-1])
 				if 'delta' in line:
-					delta = float(line.split(',')[-1])
-					if delta > self.exp_gmm - acos(self.vd/self.vi):
-						delta = self.exp_gmm - acos(self.vd/self.vi)					
+					self.exp_delta = float(line.split(',')[-1])
+					if self.exp_delta > self.exp_gmm - acos(self.vd/self.vi):
+						self.exp_delta = self.exp_gmm - acos(self.vd/self.vi)					
 
 	def is_capture(self, xi, xds):
 		cap = False
@@ -224,6 +224,9 @@ class BaseGame(object):
 
 		return self.get_state()
 
+	def rotate_to_exp(self, xs):
+		return np.matmul(xs, np.array([[0., 1.], [-1., 0.]]))
+
 	def advance(self, te):	
 		t = 0
 		xs0 = self.get_state()
@@ -240,14 +243,14 @@ class BaseGame(object):
 				x.append(xnew[role])
 			ts.append(t)
 			if self.is_capture(xnew['I0'], [xnew['D0'], xnew['D1']]):
-				print('capture')
+				print('simulation: capture')
 				break
 			if self.is_intarget(xnew['I0']):
-				print('entered')
+				print('simulation: entered')
 				break
 			xold = xnew
 		for role, x in xs.items():
-			xs[role] = np.asarray(x)
+			xs[role] = self.rotate_to_exp(np.asarray(x))
 		return np.asarray(ts), xs
 
 	def replay_exp(self):
@@ -268,9 +271,13 @@ class BaseGame(object):
 			for role, p in self.players.items():
 				xs[role].append(np.array([p.exp.x(t), p.exp.y(t)]))
 				ps[role].append(p.exp.fp(t))
+			if self.is_capture(xs['I0'][-1], [xs['D0'][-1], xs['D1'][-1]]):
+				print('experiment: capture')
+			if self.is_intarget(xs['I0'][-1]):
+				print('experiment: entered')
 			t += self.dt 
 		for role, data in xs.items():
-			xs[role] = np.asarray(data)
+			xs[role] = self.rotate_to_exp(np.asarray(data))
 
 		return np.asarray(ts), xs, ps
 
@@ -294,6 +301,13 @@ class SlowDgame(BaseGame):
 		self.policy_dict['w'] = self.w_strategy
 		self.policy_dict['h'] = self.h_strategy
 		self.strategy = closeWrapper(self.policy_dict[self.dstrategy], self.policy_dict[self.istrategy])
+
+	def shift_by_target(self, xs):
+		for i in range(len(xs)):
+			for j in [0, 2, 4]:
+				xs[i, j] += self.target.x0
+			for j in [1, 3, 5]:
+				xs[i, j] += self.target.y0
 
 	def generate_traj_for_learning(self, S, T, gmm, D, delta, n=30):
 		assert S >= self.s_lb
@@ -339,7 +353,10 @@ class SlowDgame(BaseGame):
 
 	def reproduce_analytic_traj(self, n=50):
 		xs, _ = self.analytic_traj.envelope_traj(self.exp_S, self.exp_T, self.exp_gmm, self.exp_D, self.exp_delta, n=n)
-		return {'D0': xs[:,:2], 'D1': xs[:,4:], 'I0': xs[:,2:4]}
+		self.shift_by_target(xs)
+		return {'D0': self.rotate_to_exp(xs[:,:2]), 
+				'D1': self.rotate_to_exp(xs[:,4:]), 
+				'I0': self.rotate_to_exp(xs[:,2:4])}
 
 	def get_vecs(self, xs):
 		D1 = np.concatenate((xs['D0'], [0]))

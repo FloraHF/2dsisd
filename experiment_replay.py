@@ -12,10 +12,10 @@ class ReplayPool(object):
 
 		self._role = role
 		self.pdict = {'nn': 5,
-					  'h': 4,
-					  'i': 2,
-					  'm': 3,
-					  'z': 1,
+					  'pt': 4,
+					  'pp': 3,
+					  'h': 2,
+					  'f': 1,
 					  'D0 close': 0,
 					  'D1 close': 0,
 					  'both close': -1,}
@@ -31,6 +31,8 @@ class ReplayPool(object):
 
 		self._tm = 1.
 		self.t_start, self.t_end, self.t_close, self.fp = self._read_policy()
+		self.t_start -= 1.
+		self.t_end += 1.
 		self.x, self.y = self._read_xy(self.t_start, self.t_end, file='location.csv')
 		self.vx, self.vy = self._read_xy(self.t_start, self.t_end, file='cmdVtemp.csv')
 		# self.a = self._read_a(self.t_start, self.t_end)
@@ -48,6 +50,7 @@ class ReplayPool(object):
 		        t.append(time)
 		        policy = datastr[1]
 		        # print(policy)
+		        # print(policy)
 		        for pname, pnum in self.pdict.items():
 		        	if pname in policy:
 		        		policy_id = pnum
@@ -56,7 +59,7 @@ class ReplayPool(object):
 		        			t_close = time
 		        p.append(policy_id)
 		# print(len(t), len(p))
-		f_policy = interp1d(t, p)
+		f_policy = interp1d(t, p, fill_value='extrapolate')
 
 		return t[0], t[-1], t_close, f_policy
 

@@ -16,14 +16,15 @@ class Plotter(object):
 		self.colors = {'D0': 'g', 'I0': 'r', 'D1': 'b'}
 		self.target_specs = {'line':(0, ()), 'color':'k'}
 		self.dcontour_specs = {'line':(0, ()), 'color':'k'}
-		self.xlim = [-r, r]
-		self.ylim = [-r, r]
+		self.xlim = [-.7, .8]
+		self.ylim = [-1.1, 1.1]
 
 		self.game = game
 		self.r = game.r
 		self.a = game.a
 		self.target = game.target
-		print(self.target.y0)
+		self.target_level_0 = self.get_target()
+		# print(self.target.y0)
 
 	def get_data(self, fn, midx=0, midy=0, kx=1., ky=1., n=80):
 		x = np.linspace(midx+kx*self.xlim[0], midx+kx*self.xlim[1], n)
@@ -31,10 +32,20 @@ class Plotter(object):
 		X, Y = np.meshgrid(x, y)
 		D = np.zeros(np.shape(X))
 		for i, (xx, yy) in enumerate(zip(X, Y)):
-			print(i)
+			# print(i)
 			for j, (xxx, yyy) in enumerate(zip(xx, yy)):
 				D[i,j] = fn(np.array([xxx, yyy]))
 		return {'X': X, 'Y': Y, 'data': D}
+
+	def get_target(self, n=60):
+		if self.target.type == 'line':
+			kx, ky = 1.2, 1.
+		else:
+			kx, ky = 3., 3.
+		data = self.get_data(self.target.level, midx=0., midy=-.5, kx=kx, ky=ky, n=n)
+		data = plt.contour(data['X'], data['Y'], data['data'], [0]).allsegs[0][0]
+		self.reset()
+		return self.game.rotate_to_exp(data)
 
 	def plot_Iwin(self, xi, xds):
 
@@ -48,13 +59,7 @@ class Plotter(object):
 		plt.contour(CT, levels = [0], colors=(self.target_specs['color'],), linestyles=(self.target_specs['line'],))
 
 	def plot_target(self, n=50):
-		if self.target.type == 'line':
-			kx, ky = 2.5, 1.
-		else:
-			kx, ky = 3., 3.
-		tgt = self.get_data(self.target.level, midx=self.target.x0, midy=-.5, kx=kx, ky=ky)
-		CT = self.ax.contour(tgt['X'], tgt['Y'], tgt['data'], [0], linestyles=(self.target_specs['line'],))
-		plt.contour(CT, levels = [0], colors=(self.target_specs['color'],), linestyles=(self.target_specs['line'],))
+		self.ax.plot(self.target_level_0[:,0], self.target_level_0[:,1], color=self.target_specs['color'], linestyle=self.target_specs['line'])
 
 	def plot_dr(self, xi, xds, ind=True):
 		k = 4.
@@ -138,20 +143,23 @@ class Plotter(object):
 				self.ax.plot(x1[0], x1[1], 'o', color=self.colors[p1])
 				self.ax.plot(x2[0], x2[1], 'o', color=self.colors[p2])
 
-	def show_plot(self, xlim=None, ylim=None, fname=None):
-		self.ax.axis('equal')
+	def show_plot(self, fname=None):
+		# self.ax.axis('equal')
 		self.ax.grid()
 		self.ax.tick_params(axis='both', which='major', labelsize=14)
 		plt.xlabel('x(m)', fontsize=14)
 		plt.ylabel('y(m)', fontsize=14)
-		if xlim is not None:
-			self.ax.set_xlim(xlim)
-		if ylim is not None:
-			self.ax.set_ylim(ylim)
-		plt.gca().legend(prop={'size': 12}, ncol=2)
+		
+		plt.gca().legend(prop={'size': 11}, ncol=1, loc='center left')
+		print('set legend')
+		self.ax.set_aspect('equal')
+		self.ax.set_xlim(self.xlim)
+		self.ax.set_ylim(self.ylim)
+
 		if fname is not None:
 			self.fig.savefig(self.game.res_dir+fname)
-		plt.show()
+		else:
+			plt.show()
 		self.reset()
 
 	def process_policy_labels(self, ps):
@@ -165,26 +173,14 @@ class Plotter(object):
 		return labels
 
 	def plot(self, xs, geox='', ps=None, traj=True, dr=False, ndr=0, dcontour=False, fname=None):
-		# ps: policies dict: {'D0': , 'D1': , 'I': }
-
+		
+		self.reset()
 		self.plot_target()
-		# print(self.target.level(np.array([0, -0.6])))
 
 		if traj:
 
 			plot_geo = False
 			ps = self.process_policy_labels(ps)
-			for k in xs:
-				pass
-			xmin = np.amin(np.array([x[:,0] for p, x in xs[k].items()]))
-			xmax = np.amax(np.array([x[:,0] for p, x in xs[k].items()]))
-			ymin = np.amin(np.array([x[:,1] for p, x in xs[k].items()]))
-			ymax = np.amax(np.array([x[:,1] for p, x in xs[k].items()]))
-			dx = (xmax - xmin)*0.2
-			dy = (ymax - ymin)*0.3
-			# fig = plt.figure()
-			xlim = (xmin-dx, xmax+dx)
-			ylim = (ymin-dy, ymax+dy)
 
 			for situ, x in xs.items():
 				for pid, px in x.items():
@@ -199,8 +195,7 @@ class Plotter(object):
 			xlim, ylim = None, None
 			plot_geo = True
 
-		if plot_geo: 
-			# print('here')
+		if plot_geo:
 			xi0 = xs[geox]['I0'][ndr, :]
 			xd0s = [xs[geox]['D0'][ndr, :], xs[geox]['D1'][ndr, :]]
 			if dr:
@@ -211,7 +206,7 @@ class Plotter(object):
 			if dcontour:
 				self.plot_dcontour(xi0, xd0s)
 
-		self.show_plot(xlim, ylim, fname=fname)
+		self.show_plot(fname=fname)
 
 	def animate(self, ts, xs, ps=None, xrs=None, linestyle=(0, ()), label='', alpha=0.5):
 		# print(xs)
@@ -223,17 +218,10 @@ class Plotter(object):
 		ts = ts - np.amin(ts)
 		tail = int(n/5)
 
-		xmin = np.amin(np.array([x[:,0] for p, x in xs.items()]))
-		xmax = np.amax(np.array([x[:,0] for p, x in xs.items()]))
-		ymin = np.amin(np.array([x[:,1] for p, x in xs.items()]))
-		ymax = np.amax(np.array([x[:,1] for p, x in xs.items()]))
-		dx = (xmax - xmin)*0.2
-		dy = (ymax - ymin)*0.3
+		self.ax.set_xlim(self.xlim)
+		self.ax.set_ylim(self.ylim)
 
-		# fig = plt.figure()
-		self.ax.set_xlim((xmin-dx, xmax+dx))
-		self.ax.set_ylim((ymin-dy, ymax+dy))
-		# ax = fig.add_subplot(111, autoscale_on=True, xlim=(xmin-dx, xmax+dx), ylim=(ymin-dy, ymax+dy))
+		self.plot_target()
 		if xrs is not None:
 			for pid, px in xrs.items():
 				self.plot_traj(pid, 'ref', px, label=ps[pid])
@@ -241,8 +229,9 @@ class Plotter(object):
 					self.plot_capture_ring(pid, 'ref', px[-1, :])
 
 		time_template = 'time = %.1fs'
-		time_text = self.ax.text(0.05, 0.9, '', transform=self.ax.transAxes, fontsize=14)
+		time_text = self.ax.text(0.05, 0.9, '', transform=self.ax.transAxes, fontsize=11)
 		plots = dict()
+		# plots['target'], = self.ax.plot([], [], color=self.target_specs['color'], linestyle=self.target_specs['line'], label='target')
 		plots['D0'], = self.ax.plot([], [], 'o', color=self.colors['D0'], label=None)
 		plots['D1'], = self.ax.plot([], [], 'o', color=self.colors['D1'], label=None)
 		plots['I0'], = self.ax.plot([], [], 'o', color=self.colors['I0'], label=None)
@@ -266,10 +255,10 @@ class Plotter(object):
 		self.ax.tick_params(axis='both', which='major', labelsize=14)
 		plt.xlabel('x(m)', fontsize=14)
 		plt.ylabel('y(m)', fontsize=14)
-		plt.gca().legend(prop={'size': 12}, ncol=2)
 
 		def init():
 			time_text.set_text('')
+			# plots['target'].set_data([], [])
 			for role, x in xs.items():
 				# print(role)
 				plots[role].set_data([], [])
@@ -288,6 +277,7 @@ class Plotter(object):
 		def animate_traj(i):
 			i = i%n
 			ii = np.clip(i-tail, 0, i)
+			# plots['target'].set_data(self.target_level_0[:,0], self.target_level_0[:,1])
 			time_text.set_text(time_template % (ts[i]))
 			for role, x in xs.items():
 				plots[role].set_data(x[i,0], x[i,1])
@@ -295,6 +285,7 @@ class Plotter(object):
 				if 'D' in role:
 					plots[role+'cap'].center = (x[i,0], x[i,1])
 			plots['Dline'].set_data([xs['D0'][i,0], xs['D1'][i,0]], [xs['D0'][i,1], xs['D1'][i,1]])	
+			# plt.gca().legend(prop={'size': 12}, ncol=2)
 			return  plots['D0'], plots['D1'], \
 					plots['D0cap'], plots['D1cap'], \
 					plots['I0'], \
@@ -302,11 +293,8 @@ class Plotter(object):
 					plots['Dline'], time_text
 
 		ani = animation.FuncAnimation(self.fig, animate_traj, init_func=init)
-		# ani = animation.ArtistAnimation(fig, ims, interval=50, blit=True,
-		#								 repeat_delay=1000)
+		plt.gca().legend(prop={'size': 11}, ncol=1, loc='center left')
 		ani.save(self.game.res_dir+'ani_traj.gif')
-		# print(self.game.res_dir+'ani_traj.gif')
-		plt.show()	
 
 
 	def reset(self):

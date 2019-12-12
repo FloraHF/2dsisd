@@ -32,6 +32,7 @@ tplay, xplay = game.advance(1.)
 xplot['play'] = xplay
 
 fname = '_'.join([strategy for role, strategy in game.pstrategy.items()])
-game.plotter.plot(xs=xplot, geox='play', ps=game.pstrategy, dcontour=True, traj=False, fname='traj_'+fname+'.png')
+game.plotter.plot(xs=xplot, geox='play', ps=game.pstrategy, dcontour=False, traj=True, fname='traj_'+fname+'.png')
+# game.plotter.animate(ts, xs_exp, pdict, xrs=xs_ref)
 
-
+# game.plotter.plot_target()
