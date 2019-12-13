@@ -138,8 +138,10 @@ class BaseGame(object):
 					self.exp_D = float(line.split(',')[-1])
 				if 'delta' in line:
 					self.exp_delta = float(line.split(',')[-1])
+					print(self.exp_delta)
 					if self.exp_delta > self.exp_gmm - acos(self.vd/self.vi):
-						self.exp_delta = self.exp_gmm - acos(self.vd/self.vi)					
+						self.exp_delta = self.exp_gmm - acos(self.vd/self.vi)
+						print(self.exp_delta)
 
 	def is_capture(self, xi, xds):
 		cap = False
@@ -409,7 +411,8 @@ class SlowDgame(BaseGame):
 		phi_1 = -(pi/2 - a1)
 		phi_2 =  (pi/2 - a2)
 		delta = (tht - (a1 + a2) - pi + 2*self.gmm)/2
-		psi_min = -(tht - (a1 + pi/2 - self.f))
+		# print(delta)
+		psi_min = -(tht - (a1 + pi/2 - self.gmm))
 		psi_max = -(a2 + pi/2 - self.gmm)
 
 		I_T = np.concatenate((self.projection_on_target(xs['I0']) - xs['I0'], [0]))

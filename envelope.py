@@ -15,6 +15,7 @@ class Envelope(object):
 		self.a = vd/vi
 		self.w = 1/self.a
 		self.s_lb = -asin(1/self.w)
+		self.gmm = acos(self.a)
 		
 
 	def get_Q(self, s):

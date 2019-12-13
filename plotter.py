@@ -53,7 +53,7 @@ class Plotter(object):
 			D1_I, D2_I, D1_D2 = self.game.get_vecs({'I0':x, 'D0':xds[0], 'D1':xds[1]})
 			d1, d2, a1, a2 = self.game.get_alpha(D1_I, D2_I, D1_D2)
 			tht = self.game.get_theta(D1_I, D2_I, D1_D2)
-			return tht - (a1 + a2) - (pi - 2*self.game.gmm0)
+			return tht - (a1 + a2) - (pi - 2*self.game.analytic_traj.gmm)
 		Iwin = self.get_data(get_Iwin, midx=xi[0], midy=xi[1], kx=10, ky=10)
 		CT = self.ax.contour(Iwin['X'], Iwin['Y'], Iwin['data'], [0], linestyles=(self.target_specs['line'],))
 		plt.contour(CT, levels = [0], colors=(self.target_specs['color'],), linestyles=(self.target_specs['line'],))

@@ -11,7 +11,7 @@ def Iwin_wrapper(strategy):
 		d1, d2, a1, a2 = args[0].get_alpha(D1_I, D2_I, D1_D2)
 		tht = args[0].get_theta(D1_I, D2_I, D1_D2)
 
-		if tht - (a1 + a2) - (pi - 2*args[0].gmm0) > 0:
+		if tht - (a1 + a2) - (pi - 2*args[0].analytic_traj.gmm) > 0:
 			acts = args[0].w_strategy(args[1])
 			return acts
 		else:
