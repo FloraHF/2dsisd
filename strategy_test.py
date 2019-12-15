@@ -19,16 +19,27 @@ if vd >= vi:
 	x0 = {'D0': np.array([-.8, 0.2]), 'I0': np.array([-.1, .4]), 'D1': np.array([.8, 0.2])}
 else:
 	game = SlowDgame(LineTarget(), sim_dir=sim_dir)
-	xref = game.generate_analytic_traj(.0, 5, acos(1/1.5)+0.2,0,0.1899999999, file='traj_param.csv')
-	# for role, xs in xref.items():
-	# 	for i, x in enumerate(xs):
-	# 		xs[i] = x + np.array([0, .3])
-	x0 = {role: x[0] for role, x in xref.items()}
+	# rgame = SlowDgame(LineTarget(), sim_dir=sim_dir)
+	# for role in rgame.pstrategy:
+	# 	rgame.pstrategy[role] = 'nn'
+
+	xref = game.generate_analytic_traj(.0, 5, acos(1/1.5)+0.2,0,0.1999999999, file='traj_param.csv')
+	x0 = dict()
+	for role in xref:
+		if 'I' in role:
+			x0[role] = xref[role][0] + np.array([0., .0])
+		else:
+			x0[role] = xref[role][0]
+
 	xplot['ref'] = xref
+	# rgame.reset(x0)
+	# tref, xplot['ref'] = rgame.advance(8.)
+	# x0 = {role: x[0] for role, x in xref.items()}
+	
 	# x0 = {'D0': np.array([-.6, 0.9]), 'I0': np.array([-.1, 1.2]), 'D1': np.array([.6, 0.9])}
  
 game.reset(x0)
-tplay, xplay = game.advance(1.)
+tplay, xplay = game.advance(8.)
 xplot['play'] = xplay
 
 fname = '_'.join([strategy for role, strategy in game.pstrategy.items()])

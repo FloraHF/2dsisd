@@ -45,7 +45,7 @@ class Plotter(object):
 		data = self.get_data(self.target.level, midx=0., midy=-.5, kx=kx, ky=ky, n=n)
 		data = plt.contour(data['X'], data['Y'], data['data'], [0]).allsegs[0][0]
 		self.reset()
-		return self.game.rotate_to_exp(data)
+		return self.game.rotate_to_exp_point(data)
 
 	def plot_Iwin(self, xi, xds):
 
@@ -173,6 +173,9 @@ class Plotter(object):
 		return labels
 
 	def plot(self, xs, geox='', ps=None, traj=True, dr=False, ndr=0, dcontour=False, fname=None):
+
+		for situ in xs:
+			xs[situ] = self.game.rotate_to_exp(xs[situ])
 		
 		self.reset()
 		self.plot_target()
@@ -196,22 +199,27 @@ class Plotter(object):
 			plot_geo = True
 
 		if plot_geo:
+			# print(ndr)
 			xi0 = xs[geox]['I0'][ndr, :]
 			xd0s = [xs[geox]['D0'][ndr, :], xs[geox]['D1'][ndr, :]]
 			if dr:
 				if self.game.a >= 1:
 					self.plot_dr(xi0, xd0s, ind=True)
 				else:
-					self.plot_Iwin(xi0, xd0s)
+					self.plot_dr(xi0, xd0s, ind=True)
+					# self.plot_Iwin(xi0, xd0s)
 			if dcontour:
 				self.plot_dcontour(xi0, xd0s)
 
 		self.show_plot(fname=fname)
 
 	def animate(self, ts, xs, ps=None, xrs=None, linestyle=(0, ()), label='', alpha=0.5):
+		xs = self.game.rotate_to_exp(xs)
+		xrs = self.game.rotate_to_exp(xrs)
 		# print(xs)
 		ps = self.process_policy_labels(ps)
 
+		# print(xs['D0'])
 		n = xs['D0'].shape[0]
 		if ts is None:
 			ts = np.linspace(0, 5, n)

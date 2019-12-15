@@ -48,6 +48,7 @@ def replay_exp(res_dir='res1/', ni=1, nd=2):
 		game = SlowDgame(LineTarget(), exp_dir=res_dir, ni=ni, nd=nd)
 		xs_ref = game.reproduce_analytic_traj()
 		ts_ref = None
+		# ts_ref2, xs_ref2 = game.advance(8.)
 	else:
 		game = FastDgame(LineTarget(), exp_dir=res_dir, ni=ni, nd=nd)
 		ts_ref, xs_ref = game.advance(8.)
@@ -56,7 +57,8 @@ def replay_exp(res_dir='res1/', ni=1, nd=2):
 	ts, xs_exp, ps_exp = game.replay_exp()
 	pdict = game.pstrategy
 	game.plotter.animate(ts, xs_exp, pdict, xrs=xs_ref)
-	game.plotter.plot({'ref':xs_ref, 'exp':xs_exp}, 'exp', pdict, fname='replay_traj.png')
+	game.plotter.plot({'exp':xs_exp}, 'exp', pdict, dr=False, fname='replay_traj.png')
+	# game.plotter.plot({'ref':xs_ref, 'exp':xs_exp}, 'exp', pdict, dr=False, fname='replay_traj.png')
 
 
 if __name__ == '__main__':
@@ -64,7 +66,8 @@ if __name__ == '__main__':
 	# t0 = time.clock()
 	# generate_data_for_exp(-0.02, 5.3, acos(1/1.5)+0.1, 0, 0.089999999, param_file='traj_param_12.csv')
 	# play_fastD_game(np.array([-.85, -0.3]), np.array([-0.2, 0.1]), np.array([.85, -0.3]), param_file='traj_param_0x.csv')
-	replay_exp(res_dir='res116/')
+
+	replay_exp(res_dir='res115/')
 
 	# t1 = time.clock()
 	# print(t1 - t0)

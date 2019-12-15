@@ -111,33 +111,36 @@ class BaseGame(object):
 
 	def read_data(self, file):
 		with open(file, 'r') as f:
-			data = f.readlines()
-			for line in data:
-				if 'vd' in line:
-					self.vd = float(line.split(',')[-1])
-				if 'vi' in line:
-					self.vi = float(line.split(',')[-1])
-				if 'rc' in line:
-					self.r = float(line.split(',')[-1])
-				if 'r_close' in line:
-					self.r_close = float(line.split(',')[-1])*self.r
-				if 'k_close' in line:
-					self.k_close = float(line.split(',')[-1])
-				if 'dstrategy' in line:
-					self.dstrategy = line.split(',')[1].rstrip()
-				if 'istrategy' in line:
-					self.istrategy = line.split(',')[1].rstrip()
-				if 'S' in line:
-					self.exp_S = float(line.split(',')[-1])
-				if 'T' in line:
-					self.exp_T = float(line.split(',')[-1])
-				if 'gmm' in line:
-					self.exp_gmm = float(line.split(',')[-1])
+			lines = f.readlines()
+			for line in lines:
+				data = line.split(',')
+				var = data[0]
+				val = data[-1].rstrip()
+				if 'vd' == var:
+					self.vd = float(val)
+				if 'vi' == var:
+					self.vi = float(val)
+				if 'rc' == var:
+					self.r = float(val)
+				if 'r_close' == var:
+					self.r_close = float(val)*self.r
+				if 'k_close' == var:
+					self.k_close = float(val)
+				if 'dstrategy' == var:
+					self.dstrategy = val
+				if 'istrategy' == var:
+					self.istrategy = val
+				if 'S' == var:
+					self.exp_S = float(val)
+				if 'T' == var:
+					self.exp_T = float(val)
+				if 'gmm' == var:
+					self.exp_gmm = float(val)
 					# print('ub:', self.exp_gmm - acos(self.vd/self.vi))
-				if 'D' == line.split(',')[0]:
-					self.exp_D = float(line.split(',')[-1])
-				if 'delta' in line:
-					self.exp_delta = float(line.split(',')[-1])
+				if 'D' == var:
+					self.exp_D = float(val)
+				if 'delta' == var:
+					self.exp_delta = float(val)
 					print(self.exp_delta)
 					if self.exp_delta > self.exp_gmm - acos(self.vd/self.vi):
 						self.exp_delta = self.exp_gmm - acos(self.vd/self.vi)
@@ -226,8 +229,14 @@ class BaseGame(object):
 
 		return self.get_state()
 
-	def rotate_to_exp(self, xs):
+	def rotate_to_exp_point(self, xs):
 		return np.matmul(xs, np.array([[0., 1.], [-1., 0.]]))
+
+	def rotate_to_exp(self, xs):
+		xrotate = dict()
+		for role in xs:
+			xrotate[role] = np.matmul(xs[role], np.array([[0., 1.], [-1., 0.]]))
+		return xrotate
 
 	def advance(self, te):	
 		t = 0
@@ -252,7 +261,7 @@ class BaseGame(object):
 				break
 			xold = xnew
 		for role, x in xs.items():
-			xs[role] = self.rotate_to_exp(np.asarray(x))
+			xs[role] = np.asarray(x)
 		return np.asarray(ts), xs
 
 	def replay_exp(self):
@@ -279,7 +288,7 @@ class BaseGame(object):
 				print('experiment: entered')
 			t += self.dt 
 		for role, data in xs.items():
-			xs[role] = self.rotate_to_exp(np.asarray(data))
+			xs[role] = np.asarray(data)
 
 		return np.asarray(ts), xs, ps
 
@@ -351,14 +360,22 @@ class SlowDgame(BaseGame):
 			f.write('xD1,' + ','.join(list(map(str,xs[0,4:]))) + '\n')
 			f.write('xI0,' + ','.join(list(map(str,xs[0,2:4]))) + '\n')
 		
-		return {'D0': xs[:,:2], 'D1': xs[:,4:], 'I0': xs[:,2:4]}
+		# return {'D0': self.rotate_to_exp(xs[:,:2]), 
+		# 		'D1': self.rotate_to_exp(xs[:,4:]), 
+		# 		'I0': self.rotate_to_exp(xs[:,2:4])}
+		return {'D0': xs[:,:2], 
+				'D1': xs[:,4:], 
+				'I0': xs[:,2:4]}
 
 	def reproduce_analytic_traj(self, n=50):
 		xs, _ = self.analytic_traj.envelope_traj(self.exp_S, self.exp_T, self.exp_gmm, self.exp_D, self.exp_delta, n=n)
 		self.shift_by_target(xs)
-		return {'D0': self.rotate_to_exp(xs[:,:2]), 
-				'D1': self.rotate_to_exp(xs[:,4:]), 
-				'I0': self.rotate_to_exp(xs[:,2:4])}
+		return {'D0': xs[:,:2], 
+				'D1': xs[:,4:], 
+				'I0': xs[:,2:4]}
+		# return {'D0': self.rotate_to_exp(xs[:,:2]), 
+		# 		'D1': self.rotate_to_exp(xs[:,4:]), 
+		# 		'I0': self.rotate_to_exp(xs[:,2:4])}
 
 	def get_vecs(self, xs):
 		D1 = np.concatenate((xs['D0'], [0]))
@@ -460,7 +477,16 @@ class SlowDgame(BaseGame):
 		# y3 = -cm.sqrt(2*m)/2 - cm.sqrt(-(2*p + 2*m - cm.sqrt(2)*q/cm.sqrt(m)))/2 - b/4
 		# y4 = -cm.sqrt(2*m)/2 + cm.sqrt(-(2*p + 2*m - cm.sqrt(2)*q/cm.sqrt(m)))/2 - b/4
 
-		return np.array([y1.real, 0])
+		# y = np.clip(self.target.y0, y1.real, y2.real)
+		y = y1.real
+		# print(y1)
+		# print(y2)
+		# print(y3)
+		# print(y4)
+		# print('\n')
+
+		# return np.array([y, 0])
+		return np.array([y, 0])
 
 	@Iwin_wrapper
 	def nn_strategy(self, xs):
