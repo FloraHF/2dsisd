@@ -27,9 +27,9 @@ else:
 	x0 = dict()
 	for role in xref:
 		if 'I' in role:
-			x0[role] = xref[role][0] + np.array([0., .0])
+			x0[role] = xref[role][0] + np.array([0., .3])
 		else:
-			x0[role] = xref[role][0]
+			x0[role] = xref[role][0] + np.array([0., .2])
 
 	xplot['ref'] = xref
 	# rgame.reset(x0)
@@ -39,7 +39,7 @@ else:
 	# x0 = {'D0': np.array([-.6, 0.9]), 'I0': np.array([-.1, 1.2]), 'D1': np.array([.6, 0.9])}
  
 game.reset(x0)
-tplay, xplay = game.advance(8.)
+tplay, xplay = game.advance(10.)
 xplot['play'] = xplay
 
 fname = '_'.join([strategy for role, strategy in game.pstrategy.items()])

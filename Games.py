@@ -473,12 +473,13 @@ class SlowDgame(BaseGame):
 		# print('\n')				
 
 		y1 =  cm.sqrt(2*m)/2 - cm.sqrt(-(2*p + 2*m + cm.sqrt(2)*q/cm.sqrt(m)))/2 - b/4
-		# y2 =  cm.sqrt(2*m)/2 + cm.sqrt(-(2*p + 2*m + cm.sqrt(2)*q/cm.sqrt(m)))/2 - b/4
+		y2 =  cm.sqrt(2*m)/2 + cm.sqrt(-(2*p + 2*m + cm.sqrt(2)*q/cm.sqrt(m)))/2 - b/4
 		# y3 = -cm.sqrt(2*m)/2 - cm.sqrt(-(2*p + 2*m - cm.sqrt(2)*q/cm.sqrt(m)))/2 - b/4
 		# y4 = -cm.sqrt(2*m)/2 + cm.sqrt(-(2*p + 2*m - cm.sqrt(2)*q/cm.sqrt(m)))/2 - b/4
 
 		# y = np.clip(self.target.y0, y1.real, y2.real)
-		y = y1.real
+		# y = 0.5*(y1 + y2).real
+		# y = y1.real
 		# print(y1)
 		# print(y2)
 		# print(y3)
@@ -486,7 +487,8 @@ class SlowDgame(BaseGame):
 		# print('\n')
 
 		# return np.array([y, 0])
-		return np.array([y, 0])
+		# return np.array([y, 0])
+		return np.array([y1.real, 0]), np.array([y2.real, 0])
 
 	@Iwin_wrapper
 	def nn_strategy(self, xs):
@@ -507,15 +509,17 @@ class SlowDgame(BaseGame):
 		D1_I, D2_I, D1_D2 = self.get_vecs(xs)
 		base = self.get_base(D1_I, D2_I, D1_D2)
 		x, y, z = self.get_xyz(D1_I, D2_I, D1_D2)
-		xt = self.deepest_in_target(xs)
+		xtI, xtD = self.deepest_in_target(xs)
 
-		P = np.concatenate((xt, [0]))
+		Pi = np.concatenate((xtI, [0]))
+		Pd = np.concatenate((xtD, [0]))
 		D1_ = np.array([0, -z, 0])
 		D2_ = np.array([0,  z, 0])
 		I_ = np.array([x, y, 0])
-		D1_P = P - D1_
-		D2_P = P - D2_
-		I_P = P - I_
+		k = .5
+		D1_P = k*Pd + (1-k)*Pi - D1_
+		D2_P = k*Pd + (1-k)*Pi - D2_
+		I_P = Pi - I_
 		D1_I_ = I_ - D1_
 		D2_I_ = I_ - D2_
 		D1_D2_ = D2_ - D1_

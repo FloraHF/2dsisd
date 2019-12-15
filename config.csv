@@ -3,5 +3,5 @@ vi,0.15
 rc,0.25
 r_close,1.1
 k_close,0.98
-dstrategy,f
-istrategy,f
+dstrategy,nn
+istrategy,nn
