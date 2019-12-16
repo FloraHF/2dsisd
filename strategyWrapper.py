@@ -11,15 +11,17 @@ def Iwin_wrapper(strategy):
 		d1, d2, a1, a2 = args[0].get_alpha(D1_I, D2_I, D1_D2)
 		tht = args[0].get_theta(D1_I, D2_I, D1_D2)
 
+
+		acts = strategy(args[0], args[1])
+		for role in args[0].players:
+			acts['p_'+role] = strategy.__name__
+
 		if tht - (a1 + a2) - (pi - 2*args[0].analytic_traj.gmm) > 0:
-			acts = args[0].w_strategy(args[1])
-			return acts
-		else:
-			acts = strategy(args[0], args[1])
-			# print(strategy.__name__)
-			for role in args[0].players:
-				acts['p_'+role] = strategy.__name__
-			return acts
+			adj_acts = args[0].w_strategy(args[1])
+			acts['I0'] = adj_acts['I0']
+			acts['p_I0'] = adj_acts['p_I0']
+
+		return acts
 
 	return wrapper
 

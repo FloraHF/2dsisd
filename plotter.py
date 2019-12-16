@@ -150,8 +150,8 @@ class Plotter(object):
 		plt.xlabel('x(m)', fontsize=14)
 		plt.ylabel('y(m)', fontsize=14)
 		
-		plt.gca().legend(prop={'size': 11}, ncol=1, loc='center left')
-		print('set legend')
+		# plt.gca().legend(prop={'size': 11}, ncol=1, loc='center left')
+		# print('set legend')
 		self.ax.set_aspect('equal')
 		self.ax.set_xlim(self.xlim)
 		self.ax.set_ylim(self.ylim)

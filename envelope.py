@@ -9,6 +9,7 @@ from RK4 import rk4, rk4_fxt_interval
 class Envelope(object):
 	"""docstring for Envelope"""
 	def __init__(self, vi, vd, r):
+		print(vi, vd)
 		self.vi = vi 
 		self.vd = vd 
 		self.r = r

@@ -145,6 +145,9 @@ class BaseGame(object):
 					if self.exp_delta > self.exp_gmm - acos(self.vd/self.vi):
 						self.exp_delta = self.exp_gmm - acos(self.vd/self.vi)
 						print(self.exp_delta)
+				if 'fk' == var:
+					self.fk = float(val)
+					print(self.fk)
 
 	def is_capture(self, xi, xds):
 		cap = False
@@ -332,7 +335,8 @@ class SlowDgame(BaseGame):
 					xs[i, j] += self.target.y0		
 		return xxs
 
-	def generate_analytic_traj(self, S, T, gmm, D, delta, n=50, file='traj_param_100.csv'):
+	def generate_analytic_traj(self, S, T, gmm, D, delta, offy=.2, n=50, file='traj_param_100.csv'):
+		# print(self.s_lb)
 		assert S >= self.s_lb
 		assert gmm >= self.gmm_lb
 		xs, _ = self.analytic_traj.envelope_traj(S, T, gmm, D, delta, n=n)
@@ -340,7 +344,7 @@ class SlowDgame(BaseGame):
 			for j in [0, 2, 4]:
 				xs[i, j] += self.target.x0
 			for j in [1, 3, 5]:
-				xs[i, j] += self.target.y0
+				xs[i, j] += self.target.y0 + offy
 		fname = self.res_dir + file
 		if os.path.exists(fname):
 			os.remove(fname)
@@ -356,6 +360,7 @@ class SlowDgame(BaseGame):
 			f.write('gmm,%.10f\n'%gmm)
 			f.write('D,%.10f\n'%D)
 			f.write('delta,%.10f\n'%delta)
+			f.write('offy,%.10f\n'%offy)
 			f.write('xD0,' + ','.join(list(map(str,xs[0,:2]))) + '\n')
 			f.write('xD1,' + ','.join(list(map(str,xs[0,4:]))) + '\n')
 			f.write('xI0,' + ','.join(list(map(str,xs[0,2:4]))) + '\n')
@@ -513,12 +518,14 @@ class SlowDgame(BaseGame):
 
 		Pi = np.concatenate((xtI, [0]))
 		Pd = np.concatenate((xtD, [0]))
+		P = self.fk*Pd + (1-self.fk)*Pi
+
 		D1_ = np.array([0, -z, 0])
 		D2_ = np.array([0,  z, 0])
 		I_ = np.array([x, y, 0])
-		k = .5
-		D1_P = k*Pd + (1-k)*Pi - D1_
-		D2_P = k*Pd + (1-k)*Pi - D2_
+			
+		D1_P = P - D1_
+		D2_P = P - D2_
 		I_P = Pi - I_
 		D1_I_ = I_ - D1_
 		D2_I_ = I_ - D2_
