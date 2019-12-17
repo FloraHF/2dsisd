@@ -172,6 +172,9 @@ class Plotter(object):
 				labels[role] = None
 		return labels
 
+	def plot_barrier():
+		pass
+
 	def plot(self, xs, geox='', ps=None, traj=True, dr=False, ndr=0, dcontour=False, fname=None):
 
 		for situ in xs:
