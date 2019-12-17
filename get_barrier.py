@@ -4,7 +4,7 @@ import numpy as np
 if os.path.exists('exp_results/barrier.csv'):	
 	os.remove('exp_results/barrier.csv')
 
-for i in range(4):
+for i in range(5):
 	for j in range(20):
 		res_dir = 'exp_results/'+'resfd%s%s'%(i,j)
 		if os.path.exists(res_dir):

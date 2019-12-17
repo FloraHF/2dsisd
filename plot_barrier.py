@@ -34,5 +34,6 @@ def get_barrier_data():
 		x['interp'] = interp1d(x['cap'], x['y'], fill_value='extrapolate')
 		print(x['x'], x['interp'](0.5))
 
-game.plotter.plot()
+# game.plotter.plot()
+get_barrier_data()
 		
