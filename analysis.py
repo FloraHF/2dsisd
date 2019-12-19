@@ -13,7 +13,7 @@ def play_fastD_game(xd0, xi, xd1, ni=1, nd=2, param_file='traj_param_100.csv'):
 	ts_play, xs_play = game.advance(8.)
 	fname = '_'.join([strategy for role, strategy in game.pstrategy.items()])
 	figid = param_file.split('.')[0].split('_')[-1]
-	game.plotter.plot(xs={'play': xs_play}, geox='play', ps=game.pstrategy, traj=True, fname='traj_'+fname+'_'+figid+'.png')
+	game.plotter.plot(xs={'play': xs_play}, geox='play', ps=game.pstrategy, traj=True, dcontour=True, fname='traj_'+fname+'_'+figid+'.png')
 
 def generate_data_for_exp(S, T, gmm, D, delta, offy=0.2, ni=1, nd=2, param_file='traj_param_100.csv'):
 	game = SlowDgame(LineTarget())
@@ -46,18 +46,15 @@ def replay_exp(res_dir='res1/', ni=1, nd=2):
 
 	if vd < vi:
 		game = SlowDgame(LineTarget(), exp_dir=res_dir, ni=ni, nd=nd)
-		xs_ref = game.reproduce_analytic_traj()
-		ts_ref = None
-		# ts_ref2, xs_ref2 = game.advance(8.)
 	else:
 		game = FastDgame(LineTarget(), exp_dir=res_dir, ni=ni, nd=nd)
-		ts_ref, xs_ref = game.advance(8.)
 
 	game.reset({role: x for role, x in x0s.items()})
-	ts, xs_exp, ps_exp = game.replay_exp()
-	pdict = game.pstrategy
-	game.plotter.animate(ts, xs_exp, pdict, xrs=xs_ref)
-	game.plotter.plot({'exp':xs_exp}, 'exp', pdict, dr=False, fname='replay_traj.png')
+	ts_ref, xs_ref, _ = game.advance(8.)
+	ts_exp, xs_exp, ps_exp = game.replay_exp()
+
+	game.plotter.animate(ts_exp, xs_exp, game.pstrategy, xrs=xs_ref)
+	game.plotter.plot({'ref':xs_ref, 'exp':xs_exp}, 'exp', game.pstrategy, dr=False, fname='replay_traj.png')
 	# game.plotter.plot({'ref':xs_ref, 'exp':xs_exp}, 'exp', pdict, dr=False, fname='replay_traj.png')
 
 
@@ -65,9 +62,11 @@ if __name__ == '__main__':
 
 	# t0 = time.clock()
 	# generate_data_for_exp(-.98, 2.5, acos(25/27)+0.5, 0, 0.3, param_file='traj_param_sd0.csv')
-	play_fastD_game(np.array([-.85, -0.3]), np.array([-0.2, 0.1]), np.array([.85, -0.3]), param_file='traj_param_fd0.csv')
+	# play_fastD_game(np.array([-.85, 0.2]), np.array([-0.2, 0.4]), np.array([.85, 0.2]), param_file='traj_param_tst0.csv')
 
-	# replay_exp(res_dir='ressd01/')
+	replay_exp(res_dir='resfd11/')
 
 	# t1 = time.clock()
 	# print(t1 - t0)
+	# game = FastDgame(LineTarget(), exp_dir='resfd01/')
+	# game.plotter.plot_barrier()

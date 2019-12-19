@@ -44,7 +44,7 @@ def closeWrapper(dstrategy, istrategy):
 		vs = args[0].get_velocity()
 		# print(args[0].last_act)
 		if (get_norm(D1_I) < args[0].r_close and get_norm(D2_I) < args[0].r_close) or args[0].last_act['p_I0'] == 'both close':  # in both range
-			print('both close')
+			# print('both close')
 			vD1 = np.concatenate((vs['D0'], [0]))
 			phi_1 = atan2(np.cross(D1_I, vD1)[-1], np.dot(D1_I, vD1))
 			phi_1 = args[0].k_close*phi_1 + base['D0']
@@ -61,7 +61,7 @@ def closeWrapper(dstrategy, istrategy):
 
 		#=============== only D1 is close ===============#
 		elif get_norm(D1_I) < args[0].r_close:  # in D1's range
-			print('D0 close')
+			# print('D0 close')
 			# print('D1 close', dstrategy.__name__)
 			# print(vs['D0'])
 			vD1 = np.concatenate((vs['D0'], [0]))
@@ -88,7 +88,7 @@ def closeWrapper(dstrategy, istrategy):
 
 		#=============== only D2 is close ===============#
 		elif get_norm(D2_I) < args[0].r_close:
-			print('D1 close')
+			# print('D1 close')
 			vD2 = np.concatenate((vs['D1'], [0]))
 			phi_2 = atan2(np.cross(D2_I, vD2)[-1], np.dot(D2_I, vD2))
 			phi_2 = args[0].k_close * phi_2
@@ -123,7 +123,7 @@ def closeWrapper(dstrategy, istrategy):
 					action['p_'+role] = dact['p_'+role]
 				if 'I' in role:
 					action['p_'+role] = iact['p_'+role]
-			print(action['p_I0'], action['p_D0'], action['p_D1'])		
+			# print(action['p_I0'], action['p_D0'], action['p_D1'])		
 		args[0].last_act = action
 		return action
 

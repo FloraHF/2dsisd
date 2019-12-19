@@ -249,6 +249,7 @@ class BaseGame(object):
 			xs[role] = [x]
 		ts = [0]
 		xold = xs0
+		info = ''
 		while t<te:
 			xnew = self.step(xold)
 			t += self.dt
@@ -257,15 +258,17 @@ class BaseGame(object):
 				x.append(xnew[role])
 			ts.append(t)
 			if self.is_capture(xnew['I0'], [xnew['D0'], xnew['D1']]):
-				print('simulation: capture')
+				# print('simulation: capture')
+				info = 'captured'
 				break
 			if self.is_intarget(xnew['I0']):
-				print('simulation: entered')
+				# print('simulation: entered')
+				info = 'entered'
 				break
 			xold = xnew
 		for role, x in xs.items():
 			xs[role] = np.asarray(x)
-		return np.asarray(ts), xs
+		return np.asarray(ts), xs, info
 
 	def replay_exp(self):
 		t_start, t_end = -1., 10000.,

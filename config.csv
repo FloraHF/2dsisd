@@ -1,8 +1,8 @@
 vd,0.25
-vi,0.20
+vi,0.24
 rc,0.25
 r_close,1.2
 k_close,0.98
 dstrategy,f
 istrategy,f
-fk,0.01
+fk,0.00
