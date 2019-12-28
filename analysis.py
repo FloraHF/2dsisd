@@ -64,9 +64,17 @@ if __name__ == '__main__':
 	# generate_data_for_exp(-.98, 2.5, acos(25/27)+0.5, 0, 0.3, param_file='traj_param_sd0.csv')
 	# play_fastD_game(np.array([-.85, 0.2]), np.array([-0.2, 0.4]), np.array([.85, 0.2]), param_file='traj_param_tst0.csv')
 
-	replay_exp(res_dir='resfd11/')
+	# replay_exp(res_dir='ressd030/')
+	# replay_exp(res_dir='ressd031/')
+	# replay_exp(res_dir='ressd032/')
+
+	# replay_exp(res_dir='resfd030/')
+	# replay_exp(res_dir='resfd031/')
+	# replay_exp(res_dir='resfd032/')
 
 	# t1 = time.clock()
 	# print(t1 - t0)
-	# game = FastDgame(LineTarget(), exp_dir='resfd01/')
+	game = FastDgame(LineTarget(), exp_dir='resfd031/')
+	# game = SlowDgame(LineTarget(), exp_dir='ressd031/')
 	# game.plotter.plot_barrier()
+	game.plotter.plot_velocity()

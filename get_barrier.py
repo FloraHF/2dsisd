@@ -11,7 +11,7 @@ def get_exp_barrier():
 		os.remove('exp_results/exp_barrier.csv')
 
 	for i in range(5):
-		for j in range(20):
+		for j in range(40):
 			res_dir = 'exp_results/'+'resfd%s%s'%(i,j)
 			if os.path.exists(res_dir):
 				with open(res_dir+'/info.csv', 'r') as f:
@@ -87,7 +87,7 @@ def get_sim_barrier():
 		os.remove('exp_results/sim_barrier.csv')
 	
 	x0 = dict()
-	with open('exp_results/resfd00'+'/info.csv', 'r') as f:
+	with open('exp_results/resfd10'+'/info.csv', 'r') as f:
 		data = f.readlines()
 		for line in data:
 			if 'x' in line:
@@ -100,20 +100,20 @@ def get_sim_barrier():
 				vi = float(line.split(',')[-1])
 
 	if vd < vi:
-		game = SlowDgame(LineTarget(), exp_dir='resfd00/')
+		game = SlowDgame(LineTarget(), exp_dir='resfd10/')
 		lb0, ub0 = .1, .8
 	else:
-		game = FastDgame(LineTarget(), exp_dir='resfd00/')
+		game = FastDgame(LineTarget(), exp_dir='resfd10/')
 		lb0, ub0 = -.1, .4
 
 
 	xbs, ybs = [], []
 	with open('exp_results/sim_barrier.csv', 'a') as f:			
-		for xI in np.linspace(-.7, 0, 30):
+		for xI in np.linspace(-.6, 0, 30):
 		# for xI in [-.2]:
 			lb, ub = lb0, ub0
 			print(xI)
-			while abs(ub - lb) > 0.001:
+			while abs(ub - lb) > 0.005:
 				# print(ub, lb)
 				yI = .5*(lb + ub)
 				x0['I0'] = np.array([xI, yI])

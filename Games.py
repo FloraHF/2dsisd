@@ -289,9 +289,11 @@ class BaseGame(object):
 				xs[role].append(np.array([p.exp.x(t), p.exp.y(t)]))
 				ps[role].append(p.exp.fp(t))
 			if self.is_capture(xs['I0'][-1], [xs['D0'][-1], xs['D1'][-1]]):
-				print('experiment: capture')
+				print('experiment: capture at %.2f'%t)
+				break
 			if self.is_intarget(xs['I0'][-1]):
-				print('experiment: entered')
+				print('experiment: entered at %.2f'%t)
+				break
 			t += self.dt 
 		for role, data in xs.items():
 			xs[role] = np.asarray(data)

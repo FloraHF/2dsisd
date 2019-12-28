@@ -19,7 +19,7 @@ class Plotter(object):
 		self.dcontour_specs = {'line':(0, ()), 'color':'k'}
 		self.barrier_specs = {'line':(0, ()), 'color':'r'}
 		self.xlim = [-.7, .8]
-		self.ylim = [-1.1, 1.1]
+		self.ylim = [-1.3, 1.]
 
 		self.game = game
 		self.r = game.r
@@ -52,52 +52,21 @@ class Plotter(object):
 
 	def get_exp_barrier_data_approx(self):
 
-		with open('exp_results/exp_barrier_counted.csv', 'r') as f:
-			lines = f.readlines()[1:]
-			n = len(lines)
-			xs = [{'x':0., 'y':[], 'cap':[]}]
+		xy = []
+		with open('exp_results/exp_barrier_comp.csv', 'r') as f:
+			lines = f.readlines()
 			for line in lines:
 				data = line.split(',')
-				# print(data)
-				newx = float(data[0])
-				y = float(data[1])
-				cap = float(data[-1])
+				xy.append(([float(data[0].rstrip()), float(data[1].rstrip())]))
+		return np.asarray(xy)
 
-				xexits = False
-				for j, x in enumerate(xs):
-					oldx = x['x']
-					if oldx == newx:
-						xexits = True
-						x['y'].append(y)
-						x['cap'].append(cap)
-
-				if not xexits:
-					xs.append({'x': newx, 'y':[y], 'cap':[cap]})
-
-		xybarrier = []
-		for x in xs:
-			if all(abs(cap - 1.) < 0.01 for cap in x['cap']):
-				xybarrier.append(np.array( [x['x'], min(x['y'])] ))
-				xybarrier.append(np.array( [-x['x'], min(x['y'])] ))
-			elif all(abs(cap) < 0.01 for cap in x['cap']):
-				xybarrier.append(np.array( [x['x'], max(x['y'])] ))
-				xybarrier.append(np.array( [-x['x'], max(x['y'])] ))
-			else:
-				print(x)
-				if len(x['y']) > 1:
-					f = interp1d(x['cap'], x['y'], fill_value='extrapolate')
-				print([x['x'], f(0.5)])
-				xybarrier.append(np.array( [x['x'], f(0.5)] ))
-				xybarrier.append(np.array( [-x['x'], f(0.5)] ))
-
-		return np.asarray(sorted(xybarrier, key=lambda xys: xys[0]))
-
-	def plot_exp_barrier_scatter(self, rotate=False, size=40):
+	def plot_exp_barrier_scatter(self, rotate=False, size=80):
 		xs, ys, caps = self.get_exp_barrier_data_asarray()
 
 		mcap, ment = [], []
 		xcap, ycap = [], []
 		xent, yent = [], []
+
 		for i, (x, y, cap) in enumerate(zip(xs, ys, caps)):
 			if cap > 0.01:
 				x_ = [0] + np.cos(np.linspace(0, 2*np.pi*cap, 15)).tolist()
@@ -120,51 +89,60 @@ class Plotter(object):
 					xent.append(x)
 					yent.append(y)
 
-		for (m, x, y) in zip(mcap, xcap, ycap):
-			self.ax.scatter(x, y, marker=m, s=size, color='blue')
+		for i, (m, x, y) in enumerate(zip(mcap, xcap, ycap)):
+			print(i)
+			if i == 11:
+				label = 'capture rate'
+			else:
+				label = None
+			self.ax.scatter(x, y, marker=m, s=size, color='g', label=label, alpha=0.8)
 		for (m, x, y) in zip(ment, xent, yent):
-			self.ax.scatter(x, y, marker=m, s=size, color='red')
+			self.ax.scatter(x, y, marker=m, s=size, color='red', alpha=0.8)
 
 	def plot_exp_barrier_line(self, rotate=False):
 		if rotate:
 			xy = self.game.rotate_to_exp_point(self.get_exp_barrier_data_approx())
 		else:			
 			xy = self.get_exp_barrier_data_approx()
-		self.ax.plot(xy[:,0], xy[:,1], color='r', linestyle=(0, ()))
+		self.ax.plot(xy[:,0], xy[:,1], color='r', linestyle=(0, ()),label='barrier exp')
 
 	def plot_sim_barrier_line(self, rotate=False):
 		if rotate:
 			xy = self.game.rotate_to_exp_point(self.get_sim_barrier_data())
 		else:
 			xy = self.get_sim_barrier_data()
-		self.ax.plot(xy[:,0], xy[:,1], color='r', linestyle=(0, (6, 1)))
+		self.ax.plot(xy[:,0], xy[:,1], color='r', linestyle=(0, (6, 1)), label='barrier sim')
 
 	def plot_barrier(self, rotate=False):
-		self.plot_exp_barrier_scatter(rotate=rotate, size=30)
-		self.plot_exp_barrier_line(rotate=rotate)
+		self.plot_exp_barrier_scatter(rotate=rotate, size=50)
+		# self.plot_exp_barrier_line(rotate=rotate)
 		self.plot_sim_barrier_line(rotate=rotate)
 		for role, p in self.game.players.items():
 			if 'D' in role:
+				label = None
+				if role == 'D0':
+					label = 'defender'
 				if rotate:
-					self.plot_capture_ring(role, 'play', self.game.rotate_to_exp_point(p.x), buff=True)
+					self.plot_capture_ring(role, 'play', self.game.rotate_to_exp_point(p.x), buff=True, label=label)
 				else:
-					self.plot_capture_ring(role, 'play', p.x, buff=True)
-		if rotate:
-			self.ax.plot([0.5, 0.5], [-1.2, 1.2], 'k')
+					self.plot_capture_ring(role, 'play', p.x, buff=True, label=label)
+		if rotate: # target
+			self.ax.plot([0.5, 0.5], [-1.2, 1.2], 'k', label='target', zorder=100)
 		else:
-			self.ax.plot([-1.2, 1.2], [-.5, -.5], 'k')
+			self.ax.plot([-1.2, 1.2], [-.5, -.5], 'k', label='target', zorder=100)
 		# self.ax.set_xlim([-.65, .1])
 		# self.ax.set_ylim([.2, .8]) # slowD, small
 		self.ax.set_xlim([-1.15, 1.15])
-		self.ax.set_ylim([-.51, .8]) # slowD, large
+		self.ax.set_ylim([-.55, .8]) # slowD, large
 		# self.ax.set_xlim([-.65, .05])
 		# self.ax.set_ylim([.35, .5]) # fastD, small
 		self.ax.set_aspect('equal')
 		self.ax.grid()
 		self.ax.set_axisbelow(True)
-		self.ax.tick_params(axis='both', which='major', labelsize=14)
-		plt.xlabel('x(m)', fontsize=14)
-		plt.ylabel('y(m)', fontsize=14)
+		self.ax.tick_params(axis='both', which='major', labelsize=12)
+		plt.xlabel('x(m)', fontsize=12)
+		plt.ylabel('y(m)', fontsize=12)
+		plt.gca().legend(prop={'size': 11}, ncol=2, loc='lower center')
 		plt.show()
 
 	def get_data(self, fn, midx=0, midy=0, kx=1., ky=1., n=80):
@@ -251,17 +229,17 @@ class Plotter(object):
 		self.plot_capture_ring('D0', None, xds[0])
 		self.plot_capture_ring('D1', None, xds[1])
 
-	def plot_capture_ring(self, player, situation, x, buff=False, n=50):
+	def plot_capture_ring(self, player, situation, x, buff=False, n=50, label=None):
 		xs, ys = [], []
 		for t in np.linspace(0, 2*pi, n):
 			xs.append(x[0] + self.r*cos(t))
 			ys.append(x[1] + self.r*sin(t))
 
-		self.ax.plot(x[0], x[1], 'o', color=self.colors[player])
+		self.ax.plot(x[0], x[1], 'o', color=self.colors[player], label=label)
 
-		if situation is None:
-			self.ax.plot(xs, ys, color=self.colors[player], linestyle=(0, ()))
-			ring = Circle((x[0], x[1]), self.r, fc=self.colors[player], ec=self.colors[player], alpha=0.4, label=None)
+		if situation is None or situation=='ref':
+			self.ax.plot(xs, ys, color=self.colors[player], linestyle=(0, (5, 5)))
+			ring = Circle((x[0], x[1]), self.r, fc=self.colors[player], ec=self.colors[player], alpha=0.1, label=None)
 			self.ax.add_patch(ring)
 		else:
 			self.ax.plot(xs, ys, color=self.colors[player], linestyle=self.linestyles[situation])
@@ -277,11 +255,12 @@ class Plotter(object):
 			self.ax.add_patch(ring)
 
 	def plot_traj(self, player, situation, xs, label=None):
+
 		if label is not None:
 			if situation == 'ref':
-				label = player + ': ' + 'ref'
+				label = player + ': ' + 'sim'
 			else:
-				label = player + ': ' + label
+				label = player + ': ' + 'exp'
 			if 'I' in label:
 				label = ' '+label
 		else:
@@ -300,18 +279,18 @@ class Plotter(object):
 	def show_plot(self, fname=None):
 		# self.ax.axis('equal')
 		self.ax.grid()
-		self.ax.tick_params(axis='both', which='major', labelsize=14)
-		plt.xlabel('x(m)', fontsize=14)
-		plt.ylabel('y(m)', fontsize=14)
+		self.ax.tick_params(axis='both', which='major', labelsize=12)
+		plt.xlabel('x(m)', fontsize=12)
+		plt.ylabel('y(m)', fontsize=12)
 		
-		# plt.gca().legend(prop={'size': 11}, ncol=1, loc='center left')
-		# print('set legend')
+		plt.gca().legend(prop={'size': 10}, ncol=2)
+		print('set legend')
 		self.ax.set_aspect('equal')
 		self.ax.set_xlim(self.xlim)
 		self.ax.set_ylim(self.ylim)
 
 		if fname is not None:
-			self.fig.savefig(self.game.res_dir+fname)
+			self.fig.savefig(self.game.res_dir+fname, bbox_inches='tight')
 		else:
 			plt.show()
 		self.reset()
@@ -347,8 +326,8 @@ class Plotter(object):
 						self.plot_capture_ring(pid, situ, px[-1, :])
 				if situ == geox:
 					plot_geo = True
-					self.plot_connect('I0', 'D0', x['I0'], x['D0'])
-					self.plot_connect('I0', 'D1', x['I0'], x['D1'])
+					# self.plot_connect('I0', 'D0', x['I0'], x['D0'])
+					# self.plot_connect('I0', 'D1', x['I0'], x['D1'])
 		else:
 			xlim, ylim = None, None
 			plot_geo = True
@@ -463,6 +442,56 @@ class Plotter(object):
 		plt.gca().legend(prop={'size': 11}, ncol=1, loc='center left')
 		ani.save(self.game.res_dir+'ani_traj.gif')
 
+	def plot_velocity(self):
+		t_start, t_end = -1., 10000.,
+		for role, p in self.game.players.items():
+			if p.exp.t_start > t_start:
+				t_start = p.exp.t_start
+			if p.exp.t_end < t_end:
+				t_end = p.exp.t_end
+
+		n = 1000
+		ts = np.linspace(t_start, t_end, n)
+		vs = {'D0': np.zeros(n),'I0': np.zeros(n), 'D1': np.zeros(n)}
+		a_cal = np.zeros(n)
+		a_exp = np.zeros(n)
+		a_sim = np.ones(n)*(self.game.a)
+
+		fig, axs = plt.subplots(3, 1)
+		for j, t in enumerate(ts):
+			# a_exp[j] = self.game.players['I0'].exp.a(t)
+			for role, player in self.game.players.items():
+				vx = player.exp.vx(t)
+				vy = player.exp.vy(t)
+				v = np.sqrt(vx**2 + vy**2)
+				vs[role][j] = v
+			a_cal[j] = (vs['D0'][j] + vs['D1'][j])/(2*vs['I0'][j])
+		
+		axs[2].plot(ts, a_cal, color='k', label='exp')
+		# axs[2].plot(ts, a_exp, color='b', label='exp')
+		axs[2].plot(ts, a_sim, color='r', label='des')
+		for role, player in self.game.players.items():
+			if 'I' in role:
+				axs[0].plot(ts, vs[role], color=self.colors[role], label=role)
+			if 'D' in role:
+				axs[1].plot(ts, vs[role], color=self.colors[role], label=role)
+
+		axs[0].set_ylabel('velocity(m/s)')
+		axs[1].set_ylabel('velocity(m/s)')
+		axs[2].set_xlabel('time(s)')
+		axs[2].set_ylabel('a')
+		axs[0].set_ylim(0.23, 0.25)
+		axs[1].set_ylim(0.245, 0.254)
+		axs[2].set_ylim(0.99, 1.1)
+		trange = (19.4, 22.9)
+		axs[0].set_xlim(trange)
+		axs[1].set_xlim(trange)
+		axs[2].set_xlim(trange)
+		for ax in axs:
+			ax.grid(True)
+			ax.legend(ncol=2)
+		fig.tight_layout()
+		plt.show()
 
 	def reset(self):
 		self.ax.clear()
