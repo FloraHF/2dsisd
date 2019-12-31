@@ -90,14 +90,20 @@ class Plotter(object):
 					yent.append(y)
 
 		for i, (m, x, y) in enumerate(zip(mcap, xcap, ycap)):
-			print(i)
-			if i == 11:
-				label = 'capture rate'
-			else:
-				label = None
-			self.ax.scatter(x, y, marker=m, s=size, color='g', label=label, alpha=0.8)
+			self.ax.scatter(x, y, marker=m, s=size, color='g', alpha=0.8)
 		for (m, x, y) in zip(ment, xent, yent):
 			self.ax.scatter(x, y, marker=m, s=size, color='red', alpha=0.8)
+
+		x_ = [0] + np.cos(np.linspace(0, 2*np.pi*0.4, 15)).tolist()
+		y_ = [0] + np.sin(np.linspace(0, 2*np.pi*0.4, 15)).tolist()
+		m_ = np.column_stack([x_, y_])
+		icon_cap = self.ax.scatter(0, -1, marker=m_, s=size, color='g', alpha=0.8)
+		x_ = [0] + np.cos(np.linspace(2*np.pi*0.4, 2*np.pi, 15)).tolist()
+		y_ = [0] + np.sin(np.linspace(2*np.pi*0.4, 2*np.pi, 15)).tolist()
+		m_ = np.column_stack([x_, y_])
+		icon_ent = self.ax.scatter(0, -1, marker=m_, s=size, color='r', alpha=0.8)
+
+		return icon_cap, icon_ent
 
 	def plot_exp_barrier_line(self, rotate=False):
 		if rotate:
@@ -114,11 +120,12 @@ class Plotter(object):
 		self.ax.plot(xy[:,0], xy[:,1], color='r', linestyle=(0, (6, 1)), label='barrier sim')
 
 	def plot_barrier(self, rotate=False):
-		self.plot_exp_barrier_scatter(rotate=rotate, size=50)
+		icon = self.plot_exp_barrier_scatter(rotate=rotate, size=50)
 		# self.plot_exp_barrier_line(rotate=rotate)
 		self.plot_sim_barrier_line(rotate=rotate)
 		for role, p in self.game.players.items():
 			if 'D' in role:
+				print(p.x)
 				label = None
 				if role == 'D0':
 					label = 'defender'
@@ -142,7 +149,11 @@ class Plotter(object):
 		self.ax.tick_params(axis='both', which='major', labelsize=12)
 		plt.xlabel('x(m)', fontsize=12)
 		plt.ylabel('y(m)', fontsize=12)
-		plt.gca().legend(prop={'size': 11}, ncol=2, loc='lower center')
+		handles, labels = self.ax.get_legend_handles_labels()
+		handles.append(icon)
+		labels.append('capture rate')
+
+		plt.legend(handles, labels, prop={'size': 11}, ncol=2, loc='lower center')
 		plt.show()
 
 	def get_data(self, fn, midx=0, midy=0, kx=1., ky=1., n=80):
@@ -265,7 +276,7 @@ class Plotter(object):
 				label = ' '+label
 		else:
 			label = player
-		self.ax.plot(xs[:,0], xs[:,1], color=self.colors[player], linestyle=self.linestyles[situation], label=label)
+		self.ax.plot(xs[:,0], xs[:,1], color=self.colors[player], linestyle=self.linestyles[situation], label=None)
 		self.ax.plot(xs[-1,0], xs[-1,1], 'o', color=self.colors[player], linestyle=self.linestyles[situation], label='_Hidden')
 
 	def plot_connect(self, p1, p2, xs1, xs2, skip=20):
@@ -283,7 +294,7 @@ class Plotter(object):
 		plt.xlabel('x(m)', fontsize=12)
 		plt.ylabel('y(m)', fontsize=12)
 		
-		plt.gca().legend(prop={'size': 10}, ncol=2)
+		plt.gca().legend(prop={'size': 11}, ncol=3, handletextpad=0.1)
 		print('set legend')
 		self.ax.set_aspect('equal')
 		self.ax.set_xlim(self.xlim)
@@ -313,6 +324,9 @@ class Plotter(object):
 		
 		self.reset()
 		self.plot_target()
+		icon_D0, = self.ax.plot([], [], 'o', color=self.colors['D0'], label='D0')
+		icon_D1, = self.ax.plot([], [], 'o', color=self.colors['D1'], label='D1')
+		icon_I, = self.ax.plot([], [], 'o', color=self.colors['I0'], label='I')
 
 		if traj:
 
@@ -365,34 +379,36 @@ class Plotter(object):
 		tail = int(n/5)
 
 		self.ax.set_xlim(self.xlim)
-		self.ax.set_ylim(self.ylim)
+		self.ax.set_ylim((-1.3, 1.3))
 
 		self.plot_target()
 		if xrs is not None:
 			for pid, px in xrs.items():
-				self.plot_traj(pid, 'ref', px, label=ps[pid])
+				# self.plot_traj(pid, 'ref', px, label=ps[pid])
+				self.plot_traj(pid, 'ref', px, label=None)
 				if 'D' in pid:
 					self.plot_capture_ring(pid, None, px[-1, :])
 
 		time_template = 'time = %.1fs'
-		time_text = self.ax.text(0.05, 0.9, '', transform=self.ax.transAxes, fontsize=11)
+		time_text = self.ax.text(0.05, .94, '', transform=self.ax.transAxes, fontsize=11)
 		plots = dict()
 		# plots['target'], = self.ax.plot([], [], color=self.target_specs['color'], linestyle=self.target_specs['line'], label='target')
-		plots['D0'], = self.ax.plot([], [], 'o', color=self.colors['D0'], label=None)
-		plots['D1'], = self.ax.plot([], [], 'o', color=self.colors['D1'], label=None)
-		plots['I0'], = self.ax.plot([], [], 'o', color=self.colors['I0'], label=None)
+		plots['D0'], = self.ax.plot([], [], 'o', color=self.colors['D0'], label='D0')
+		plots['D1'], = self.ax.plot([], [], 'o', color=self.colors['D1'], label='D1')
+		plots['I0'], = self.ax.plot([], [], 'o', color=self.colors['I0'], label='I')
 		for role in self.game.players:
-			if ps[role] is None:
-				plots[role+'tail'], = self.ax.plot([], [], linewidth=2, color=self.colors[role], linestyle=linestyle, label=role)
-			else:
-				if 'I' in role:
-					plots[role+'tail'], = self.ax.plot([], [], linewidth=2, color=self.colors[role], linestyle=linestyle, label=' '+role+': '+ps[role])
-				else:
-					plots[role+'tail'], = self.ax.plot([], [], linewidth=2, color=self.colors[role], linestyle=linestyle, label=role+': '+ps[role])
+			plots[role+'tail'], = self.ax.plot([], [], linewidth=2, color=self.colors[role], linestyle=linestyle, label=None)
+			# if ps[role] is None:
+			# 	plots[role+'tail'], = self.ax.plot([], [], linewidth=2, color=self.colors[role], linestyle=linestyle, label=role)
+			# else:
+			# 	if 'I' in role:
+			# 		plots[role+'tail'], = self.ax.plot([], [], linewidth=2, color=self.colors[role], linestyle=linestyle, label=' '+role+': '+ps[role])
+			# 	else:
+			# 		plots[role+'tail'], = self.ax.plot([], [], linewidth=2, color=self.colors[role], linestyle=linestyle, label=role+': '+ps[role])
 
-		plots['Dline'], = self.ax.plot([], [], '--', color='b', label=None)
-		plots['D0cap'] = Circle((0, 0), self.r, fc='b', ec=self.colors['D0'], alpha=alpha, label=None)
-		plots['D1cap'] = Circle((0, 0), self.r, fc='b', ec=self.colors['D1'], alpha=alpha, label=None)
+		# plots['Dline'], = self.ax.plot([], [], '--', color='b', label=None)
+		plots['D0cap'] = Circle((0, 0), self.r, fc=self.colors['D0'], ec=self.colors['D0'], alpha=alpha, label=None)
+		plots['D1cap'] = Circle((0, 0), self.r, fc=self.colors['D1'], ec=self.colors['D1'], alpha=alpha, label=None)
 		self.ax.add_patch(plots['D0cap'])
 		self.ax.add_patch(plots['D1cap'])
 
@@ -411,13 +427,12 @@ class Plotter(object):
 				plots[role+'tail'].set_data([], [])
 				if 'D' in role:
 					plots[role+'cap'].center = (x[0,0], x[0,1])
-			plots['Dline'].set_data([], [])	
+			# plots['Dline'].set_data([], [])	
 
 			return plots['D0'], plots['D1'], \
 					plots['D0cap'], plots['D1cap'], \
 					plots['I0'], \
 					plots['D0tail'], plots['D1tail'], plots['I0tail'], \
-					plots['Dline'], \
 					time_text
 
 		def animate_traj(i):
@@ -430,17 +445,19 @@ class Plotter(object):
 				plots[role+'tail'].set_data(x[ii:i+1,0], x[ii:i+1,1])
 				if 'D' in role:
 					plots[role+'cap'].center = (x[i,0], x[i,1])
-			plots['Dline'].set_data([xs['D0'][i,0], xs['D1'][i,0]], [xs['D0'][i,1], xs['D1'][i,1]])	
+			# plots['Dline'].set_data([xs['D0'][i,0], xs['D1'][i,0]], [xs['D0'][i,1], xs['D1'][i,1]])	
 			# plt.gca().legend(prop={'size': 12}, ncol=2)
 			return  plots['D0'], plots['D1'], \
 					plots['D0cap'], plots['D1cap'], \
 					plots['I0'], \
 					plots['D0tail'], plots['D1tail'], plots['I0tail'], \
-					plots['Dline'], time_text
+					time_text
 
-		ani = animation.FuncAnimation(self.fig, animate_traj, init_func=init)
-		plt.gca().legend(prop={'size': 11}, ncol=1, loc='center left')
-		ani.save(self.game.res_dir+'ani_traj.gif')
+		ani = animation.FuncAnimation(self.fig, animate_traj, init_func=init, interval=self.game.dt*1000)
+		plt.gca().legend(prop={'size': 11}, ncol=3, loc='lower center', handletextpad=0.1)
+		plt.gcf().set_size_inches(4,5)
+		self.fig.tight_layout()
+		ani.save(self.game.res_dir+'ani_traj.mp4')
 
 	def plot_velocity(self):
 		t_start, t_end = -1., 10000.,
@@ -453,12 +470,23 @@ class Plotter(object):
 		n = 1000
 		ts = np.linspace(t_start, t_end, n)
 		vs = {'D0': np.zeros(n),'I0': np.zeros(n), 'D1': np.zeros(n)}
+		dis = {'D0': np.zeros(n), 'D1': np.zeros(n), 'target': np.zeros(n)}
+		dcolor = {'D0': self.colors['D0'], 'D1': self.colors['D1'], 'target': self.target_specs['color']}
 		a_cal = np.zeros(n)
 		a_exp = np.zeros(n)
 		a_sim = np.ones(n)*(self.game.a)
 
-		fig, axs = plt.subplots(3, 1)
+		fig, axs = plt.subplots(2, 1)
 		for j, t in enumerate(ts):
+			xi = self.game.players['I0'].exp.x(t)
+			yi = self.game.players['I0'].exp.y(t)
+			xd0 = self.game.players['D0'].exp.x(t)
+			yd0 = self.game.players['D0'].exp.y(t)
+			xd1 = self.game.players['D1'].exp.x(t)
+			yd1 = self.game.players['D1'].exp.y(t)
+			dis['D0'][j] = np.sqrt((yi - yd0)**2 + (xi - xd0)**2)
+			dis['D1'][j] = np.sqrt((yi - yd1)**2 + (xi - xd1)**2)
+			dis['target'][j] = yi + 0.5
 			# a_exp[j] = self.game.players['I0'].exp.a(t)
 			for role, player in self.game.players.items():
 				vx = player.exp.vx(t)
@@ -467,31 +495,85 @@ class Plotter(object):
 				vs[role][j] = v
 			a_cal[j] = (vs['D0'][j] + vs['D1'][j])/(2*vs['I0'][j])
 		
-		axs[2].plot(ts, a_cal, color='k', label='exp')
+		# axs[2].plot(ts, a_cal, color='k', label='exp')
 		# axs[2].plot(ts, a_exp, color='b', label='exp')
-		axs[2].plot(ts, a_sim, color='r', label='des')
+		# axs[2].plot(ts, a_sim, color='r', label='des')
 		for role, player in self.game.players.items():
 			if 'I' in role:
-				axs[0].plot(ts, vs[role], color=self.colors[role], label=role)
+				axs[0].plot(ts, vs[role], color=self.colors[role], label='I')
 			if 'D' in role:
-				axs[1].plot(ts, vs[role], color=self.colors[role], label=role)
+				axs[0].plot(ts, vs[role], color=self.colors[role], label=role)
+
+		for r, data in dis.items():
+			axs[1].plot(ts, data, color=dcolor[r], label=r)
 
 		axs[0].set_ylabel('velocity(m/s)')
-		axs[1].set_ylabel('velocity(m/s)')
-		axs[2].set_xlabel('time(s)')
-		axs[2].set_ylabel('a')
-		axs[0].set_ylim(0.23, 0.25)
-		axs[1].set_ylim(0.245, 0.254)
-		axs[2].set_ylim(0.99, 1.1)
-		trange = (19.4, 22.9)
+		axs[1].set_ylabel('distance(m)')
+		axs[1].set_xlabel('time(s)')
+		# axs[2].set_ylabel('a')
+		axs[0].set_ylim(0.24, 0.28)
+		# axs[1].set_ylim(0.245, 0.254)
+		# axs[2].set_ylim(0.99, 1.1)
+		trange = (27.1, 30.1)
 		axs[0].set_xlim(trange)
 		axs[1].set_xlim(trange)
-		axs[2].set_xlim(trange)
+		# axs[2].set_xlim(trange)
 		for ax in axs:
 			ax.grid(True)
 			ax.legend(ncol=2)
 		fig.tight_layout()
 		plt.show()
+
+	# def plot_dist(self):
+	# 	t_start, t_end = -1., 10000.,
+	# 	for role, p in self.game.players.items():
+	# 		if p.exp.t_start > t_start:
+	# 			t_start = p.exp.t_start
+	# 		if p.exp.t_end < t_end:
+	# 			t_end = p.exp.t_end
+
+	# 	n = 1000
+	# 	ts = np.linspace(t_start, t_end, n)
+	# 	dis = {'D0': np.zeros(n), 'D1': np.zeros(n), 'target': np.zeros(n)}
+
+	# 	fig, axs = plt.subplots(3, 1)
+	# 	for j, t in enumerate(ts):
+	# 		# a_exp[j] = self.game.players['I0'].exp.a(t)
+	# 		xi = self.game.players['I0'].exp.x(t)
+	# 		yi = self.game.players['I0'].exp.y(t)
+	# 		xd0 = self.game.players['D0'].exp.x(t)
+	# 		yd0 = self.game.players['D0'].exp.y(t)
+	# 		xd1 = self.game.players['D1'].exp.x(t)
+	# 		yd1 = self.game.players['D1'].exp.y(t)
+	# 		dis['D0'][j] = np.sqrt((yi - yd1)**2 + (xi - xd1)**2)
+	# 		dis['D1'][j] = np.sqrt((yi - yd1)**2 + (xi - xd1)**2)
+	# 		dis['target'][j] = yi
+		
+	# 	axs[2].plot(ts, a_cal, color='k', label='exp')
+	# 	# axs[2].plot(ts, a_exp, color='b', label='exp')
+	# 	axs[2].plot(ts, a_sim, color='r', label='des')
+	# 	for role, player in self.game.players.items():
+	# 		if 'I' in role:
+	# 			axs[0].plot(ts, vs[role], color=self.colors[role], label=role)
+	# 		if 'D' in role:
+	# 			axs[1].plot(ts, vs[role], color=self.colors[role], label=role)
+
+	# 	axs[0].set_ylabel('velocity(m/s)')
+	# 	axs[1].set_ylabel('velocity(m/s)')
+	# 	axs[2].set_xlabel('time(s)')
+	# 	axs[2].set_ylabel('a')
+	# 	axs[0].set_ylim(0.23, 0.25)
+	# 	axs[1].set_ylim(0.245, 0.254)
+	# 	axs[2].set_ylim(0.99, 1.1)
+	# 	trange = (19.4, 22.9)
+	# 	axs[0].set_xlim(trange)
+	# 	axs[1].set_xlim(trange)
+	# 	axs[2].set_xlim(trange)
+	# 	for ax in axs:
+	# 		ax.grid(True)
+	# 		ax.legend(ncol=2)
+	# 	fig.tight_layout()
+	# 	plt.show()
 
 	def reset(self):
 		self.ax.clear()

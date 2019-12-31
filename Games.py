@@ -85,7 +85,7 @@ class BaseGame(object):
 		self.a = self.vd/self.vi
 		# self.gmm0 = acos(self.a)
 		self.gmm = acos(min(self.a, 1))
-		self.dt = 0.1
+		self.dt = 0.2
 		self.ni = ni
 		self.nd = nd
 		self.policy_dict = {'pt': self.pt_strategy,
