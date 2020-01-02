@@ -50,10 +50,15 @@ def replay_exp(res_dir='res1/', ni=1, nd=2):
 		game = FastDgame(LineTarget(), exp_dir=res_dir, ni=ni, nd=nd)
 
 	game.reset({role: x for role, x in x0s.items()})
-	ts_ref, xs_ref, _ = game.advance(8.)
+	# ts_ref, xs_ref, _ = game.advance(8.)
 	ts_exp, xs_exp, ps_exp = game.replay_exp()
+	for role, x in xs_exp.items():
+		x0s[role] = x[0]
+	game.reset({role: x for role, x in x0s.items()})
+	ts_ref, xs_ref, _ = game.advance(8.)
 
-	game.plotter.animate(ts_exp, xs_exp, game.pstrategy, xrs=xs_ref)
+
+	# game.plotter.animate(ts_exp, xs_exp, game.pstrategy, xrs=xs_ref)
 	game.plotter.plot({'ref':xs_ref, 'exp':xs_exp}, 'exp', game.pstrategy, dr=False, fname='replay_traj.png')
 	# game.plotter.plot({'ref':xs_ref, 'exp':xs_exp}, 'exp', pdict, dr=False, fname='replay_traj.png')
 
@@ -64,19 +69,20 @@ if __name__ == '__main__':
 	# generate_data_for_exp(-.98, 2.5, acos(25/27)+0.5, 0, 0.3, param_file='traj_param_sd0.csv')
 	# play_fastD_game(np.array([-.85, 0.2]), np.array([-0.2, 0.4]), np.array([.85, 0.2]), param_file='traj_param_tst0.csv')
 
-	replay_exp(res_dir='ressd032/')
-	replay_exp(res_dir='ressd034/')
+	# replay_exp(res_dir='ressd032/')
+	# replay_exp(res_dir='ressd034/')
 
-	# replay_exp(res_dir='resfd030/')
+
+	replay_exp(res_dir='resfd25003/')
 	# replay_exp(res_dir='resfd031/')
 	# replay_exp(res_dir='resfd032/')
 
 	# t1 = time.clock()
 	# print(t1 - t0)
-	# game = FastDgame(LineTarget(), exp_dir='resfd031/')
+	game = FastDgame(LineTarget(), exp_dir='resfd25003/')
 	# game = SlowDgame(LineTarget(), exp_dir='ressd034/')
 	# game.players['D0'].x = np.array([-0.85, 0.2])
 	# game.players['D1'].x = np.array([ 0.85, 0.2])
 	# game.plotter.plot_barrier()
 	
-	# game.plotter.plot_velocity()
+	game.plotter.plot_velocity()

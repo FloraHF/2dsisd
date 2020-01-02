@@ -468,7 +468,7 @@ class Plotter(object):
 				t_end = p.exp.t_end
 
 		n = 1000
-		ts = np.linspace(t_start, t_end, n)
+		ts = np.linspace(t_start-1, t_end, n)
 		vs = {'D0': np.zeros(n),'I0': np.zeros(n), 'D1': np.zeros(n)}
 		dis = {'D0': np.zeros(n), 'D1': np.zeros(n), 'target': np.zeros(n)}
 		dcolor = {'D0': self.colors['D0'], 'D1': self.colors['D1'], 'target': self.target_specs['color']}
@@ -514,9 +514,9 @@ class Plotter(object):
 		axs[0].set_ylim(0.24, 0.28)
 		# axs[1].set_ylim(0.245, 0.254)
 		# axs[2].set_ylim(0.99, 1.1)
-		trange = (27.1, 30.1)
-		axs[0].set_xlim(trange)
-		axs[1].set_xlim(trange)
+		# trange = (27.1, 30.1)
+		# axs[0].set_xlim(trange)
+		# axs[1].set_xlim(trange)
 		# axs[2].set_xlim(trange)
 		for ax in axs:
 			ax.grid(True)
