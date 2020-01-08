@@ -11,11 +11,7 @@ class ReplayPool(object):
 	def __init__(self, role, res_dir='res1/'):
 
 		self._role = role
-		self.pdict = {'nn': 6,
-					  'w': 5,
-					  'pt': 4,
-					  'pp': 3,
-					  'h': 2,
+		self.pdict = {'w': 2,
 					  'f': 1,
 					  'D0 close': 0,
 					  'D1 close': 0,

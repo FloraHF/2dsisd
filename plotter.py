@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from matplotlib.patches import Circle
+import matplotlib.ticker as ticker
 
 import numpy as np
 from scipy.interpolate import interp1d
@@ -28,9 +29,9 @@ class Plotter(object):
 		self.target_level_0 = self.get_target()
 		# print(self.target.y0)
 
-	def get_sim_barrier_data(self):
+	def get_sim_barrier_data(self, dr='fd'):
 		xy = []
-		with open('exp_results/sim_barrier.csv', 'r') as f:
+		with open('exp_results/barrier' + dr + '/sim_barrier.csv', 'r') as f:
 			lines = f.readlines()[1:]
 			for line in lines:
 				data = line.split(',')
@@ -38,9 +39,9 @@ class Plotter(object):
 				xy.append(np.array([-float(data[0]), float(data[1])]))
 		return np.asarray(sorted(xy, key=lambda xys: xys[0]))
 
-	def get_exp_barrier_data_asarray(self):
+	def get_exp_barrier_data_asarray(self, dr='fd'):
 		x, y, cap = [], [], []
-		with open('exp_results/exp_barrier_counted.csv', 'r') as f:
+		with open('exp_results/barrier' + dr + '/exp_barrier_counted.csv', 'r') as f:
 			lines = f.readlines()[1:]
 			for line in lines:
 				data = line.split(',')
@@ -50,18 +51,19 @@ class Plotter(object):
 
 		return x, y, cap
 
-	def get_exp_barrier_data_approx(self):
+	def get_exp_barrier_data_approx(self, dr='fd'):
 
 		xy = []
-		with open('exp_results/exp_barrier_comp.csv', 'r') as f:
+		with open('exp_results/barrier' + dr + '/exp_barrier_comp.csv', 'r') as f:
 			lines = f.readlines()
 			for line in lines:
 				data = line.split(',')
+				print(data)
 				xy.append(([float(data[0].rstrip()), float(data[1].rstrip())]))
 		return np.asarray(xy)
 
-	def plot_exp_barrier_scatter(self, rotate=False, size=80):
-		xs, ys, caps = self.get_exp_barrier_data_asarray()
+	def plot_exp_barrier_scatter(self, dr='fd', rotate=False, size=80):
+		xs, ys, caps = self.get_exp_barrier_data_asarray(dr=dr)
 
 		mcap, ment = [], []
 		xcap, ycap = [], []
@@ -105,24 +107,31 @@ class Plotter(object):
 
 		return icon_cap, icon_ent
 
-	def plot_exp_barrier_line(self, rotate=False):
+	def plot_exp_barrier_line(self, dr='fd', rotate=False):
 		if rotate:
-			xy = self.game.rotate_to_exp_point(self.get_exp_barrier_data_approx())
+			xy = self.game.rotate_to_exp_point(self.get_exp_barrier_data_approx(dr=dr))
 		else:			
-			xy = self.get_exp_barrier_data_approx()
-		self.ax.plot(xy[:,0], xy[:,1], color='r', linestyle=(0, ()),label='barrier exp')
+			xy = self.get_exp_barrier_data_approx(dr=dr)
+		barrier = interp1d(xy[:,0], xy[:,1])
+		xs = np.linspace(-.6, 0, 20)
+		ys = []
+		for x in xs:
+			ys.append(barrier(x))
+		ys = np.asarray(ys) 
+		self.ax.plot(xs, ys, color='r', linestyle=(0, ()),label='barrier exp')
 
-	def plot_sim_barrier_line(self, rotate=False):
+	def plot_sim_barrier_line(self, dr='fd', rotate=False):
 		if rotate:
-			xy = self.game.rotate_to_exp_point(self.get_sim_barrier_data())
+			xy = self.game.rotate_to_exp_point(self.get_sim_barrier_data(dr=dr))
 		else:
-			xy = self.get_sim_barrier_data()
+			xy = self.get_sim_barrier_data(dr=dr)
+		
 		self.ax.plot(xy[:,0], xy[:,1], color='r', linestyle=(0, (6, 1)), label='barrier sim')
 
-	def plot_barrier(self, rotate=False):
-		icon = self.plot_exp_barrier_scatter(rotate=rotate, size=50)
-		# self.plot_exp_barrier_line(rotate=rotate)
-		self.plot_sim_barrier_line(rotate=rotate)
+	def plot_barrier(self, rotate=False, dr='sd'):
+		icon = self.plot_exp_barrier_scatter(dr=dr, rotate=rotate, size=50)
+		self.plot_exp_barrier_line(dr=dr, rotate=rotate)
+		self.plot_sim_barrier_line(dr=dr, rotate=rotate)
 		for role, p in self.game.players.items():
 			if 'D' in role:
 				print(p.x)
@@ -153,7 +162,7 @@ class Plotter(object):
 		handles.append(icon)
 		labels.append('capture rate')
 
-		plt.legend(handles, labels, prop={'size': 11}, ncol=2, loc='lower center')
+		plt.legend(handles, labels, prop={'size': 11}, ncol=3, loc='lower center')
 		plt.show()
 
 	def get_data(self, fn, midx=0, midy=0, kx=1., ky=1., n=80):
@@ -291,9 +300,14 @@ class Plotter(object):
 		# self.ax.axis('equal')
 		self.ax.grid()
 		self.ax.tick_params(axis='both', which='major', labelsize=12)
-		plt.xlabel('x(m)', fontsize=12)
-		plt.ylabel('y(m)', fontsize=12)
+		plt.xlabel('y(m)', fontsize=12)
+		plt.ylabel('x(m)', fontsize=12)
+		plt.xticks([-0.5, 0, 0.5], [0.5, 0, -0.5])
+		# self.ax.xaxis.set_major_locator(ticker.FixedLocator([-0.4, 0, 0.4]))
 		
+		# for lbl in plt.xticks()[1]:
+		# 	print(lbl)
+		# print(plt.xticks()[0])
 		plt.gca().legend(prop={'size': 11}, ncol=3, handletextpad=0.1)
 		print('set legend')
 		self.ax.set_aspect('equal')
@@ -379,6 +393,7 @@ class Plotter(object):
 		tail = int(n/5)
 
 		self.ax.set_xlim(self.xlim)
+		plt.xticks([-0.5, 0, 0.5], [0.5, 0, -0.5])
 		self.ax.set_ylim((-1.3, 1.3))
 
 		self.plot_target()
@@ -415,8 +430,8 @@ class Plotter(object):
 		self.ax.set_aspect('equal')
 		self.ax.grid()
 		self.ax.tick_params(axis='both', which='major', labelsize=14)
-		plt.xlabel('x(m)', fontsize=14)
-		plt.ylabel('y(m)', fontsize=14)
+		plt.xlabel('y(m)', fontsize=14)
+		plt.ylabel('x(m)', fontsize=14)
 
 		def init():
 			time_text.set_text('')
@@ -470,13 +485,14 @@ class Plotter(object):
 		n = 1000
 		ts = np.linspace(t_start-1, t_end, n)
 		vs = {'D0': np.zeros(n),'I0': np.zeros(n), 'D1': np.zeros(n)}
+		ps = np.zeros(n)
 		dis = {'D0': np.zeros(n), 'D1': np.zeros(n), 'target': np.zeros(n)}
 		dcolor = {'D0': self.colors['D0'], 'D1': self.colors['D1'], 'target': self.target_specs['color']}
 		a_cal = np.zeros(n)
 		a_exp = np.zeros(n)
 		a_sim = np.ones(n)*(self.game.a)
 
-		fig, axs = plt.subplots(2, 1)
+		fig, axs = plt.subplots(3, 1)
 		for j, t in enumerate(ts):
 			xi = self.game.players['I0'].exp.x(t)
 			yi = self.game.players['I0'].exp.y(t)
@@ -493,6 +509,8 @@ class Plotter(object):
 				vy = player.exp.vy(t)
 				v = np.sqrt(vx**2 + vy**2)
 				vs[role][j] = v
+				if 'I' in role:
+					ps[j] = int(player.exp.fp(t))
 			a_cal[j] = (vs['D0'][j] + vs['D1'][j])/(2*vs['I0'][j])
 		
 		# axs[2].plot(ts, a_cal, color='k', label='exp')
@@ -507,73 +525,27 @@ class Plotter(object):
 		for r, data in dis.items():
 			axs[1].plot(ts, data, color=dcolor[r], label=r)
 
+		axs[2].plot(ts, ps, color='k')
+
 		axs[0].set_ylabel('velocity(m/s)')
 		axs[1].set_ylabel('distance(m)')
+		axs[2].set_ylabel('policy')
+		plt.sca(axs[2])
+		plt.yticks([-1, 0, 1, 2], ('both', 'D0/D1', 'DR', 'target'))
 		axs[1].set_xlabel('time(s)')
 		# axs[2].set_ylabel('a')
 		axs[0].set_ylim(0.24, 0.28)
 		# axs[1].set_ylim(0.245, 0.254)
 		# axs[2].set_ylim(0.99, 1.1)
-		# trange = (27.1, 30.1)
-		# axs[0].set_xlim(trange)
-		# axs[1].set_xlim(trange)
+		trange = (13.5, 17.2)
+		axs[0].set_xlim(trange)
+		axs[1].set_xlim(trange)
 		# axs[2].set_xlim(trange)
 		for ax in axs:
 			ax.grid(True)
 			ax.legend(ncol=2)
 		fig.tight_layout()
 		plt.show()
-
-	# def plot_dist(self):
-	# 	t_start, t_end = -1., 10000.,
-	# 	for role, p in self.game.players.items():
-	# 		if p.exp.t_start > t_start:
-	# 			t_start = p.exp.t_start
-	# 		if p.exp.t_end < t_end:
-	# 			t_end = p.exp.t_end
-
-	# 	n = 1000
-	# 	ts = np.linspace(t_start, t_end, n)
-	# 	dis = {'D0': np.zeros(n), 'D1': np.zeros(n), 'target': np.zeros(n)}
-
-	# 	fig, axs = plt.subplots(3, 1)
-	# 	for j, t in enumerate(ts):
-	# 		# a_exp[j] = self.game.players['I0'].exp.a(t)
-	# 		xi = self.game.players['I0'].exp.x(t)
-	# 		yi = self.game.players['I0'].exp.y(t)
-	# 		xd0 = self.game.players['D0'].exp.x(t)
-	# 		yd0 = self.game.players['D0'].exp.y(t)
-	# 		xd1 = self.game.players['D1'].exp.x(t)
-	# 		yd1 = self.game.players['D1'].exp.y(t)
-	# 		dis['D0'][j] = np.sqrt((yi - yd1)**2 + (xi - xd1)**2)
-	# 		dis['D1'][j] = np.sqrt((yi - yd1)**2 + (xi - xd1)**2)
-	# 		dis['target'][j] = yi
-		
-	# 	axs[2].plot(ts, a_cal, color='k', label='exp')
-	# 	# axs[2].plot(ts, a_exp, color='b', label='exp')
-	# 	axs[2].plot(ts, a_sim, color='r', label='des')
-	# 	for role, player in self.game.players.items():
-	# 		if 'I' in role:
-	# 			axs[0].plot(ts, vs[role], color=self.colors[role], label=role)
-	# 		if 'D' in role:
-	# 			axs[1].plot(ts, vs[role], color=self.colors[role], label=role)
-
-	# 	axs[0].set_ylabel('velocity(m/s)')
-	# 	axs[1].set_ylabel('velocity(m/s)')
-	# 	axs[2].set_xlabel('time(s)')
-	# 	axs[2].set_ylabel('a')
-	# 	axs[0].set_ylim(0.23, 0.25)
-	# 	axs[1].set_ylim(0.245, 0.254)
-	# 	axs[2].set_ylim(0.99, 1.1)
-	# 	trange = (19.4, 22.9)
-	# 	axs[0].set_xlim(trange)
-	# 	axs[1].set_xlim(trange)
-	# 	axs[2].set_xlim(trange)
-	# 	for ax in axs:
-	# 		ax.grid(True)
-	# 		ax.legend(ncol=2)
-	# 	fig.tight_layout()
-	# 	plt.show()
 
 	def reset(self):
 		self.ax.clear()
