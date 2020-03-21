@@ -1,7 +1,10 @@
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from matplotlib.patches import Circle
+from matplotlib.collections import LineCollection
 import matplotlib.ticker as ticker
+from matplotlib.legend_handler import HandlerLine2D, HandlerTuple
+from legendhandler import HandlerDashedLines
 
 import numpy as np
 from scipy.interpolate import interp1d
@@ -127,12 +130,14 @@ class Plotter(object):
 			xy = self.get_sim_barrier_data(dr=dr)
 		
 		self.ax.plot(xy[:,0], xy[:,1], color='r', linestyle=(0, (6, 1)), label='barrier sim')
+		# plt.show()
 
 	def plot_barrier(self, rotate=False, dr='sd'):
 		icon = self.plot_exp_barrier_scatter(dr=dr, rotate=rotate, size=50)
 		self.plot_exp_barrier_line(dr=dr, rotate=rotate)
 		self.plot_sim_barrier_line(dr=dr, rotate=rotate)
 		for role, p in self.game.players.items():
+			print('This is locations')
 			if 'D' in role:
 				print(p.x)
 				label = None
@@ -141,7 +146,7 @@ class Plotter(object):
 				if rotate:
 					self.plot_capture_ring(role, 'play', self.game.rotate_to_exp_point(p.x), buff=True, label=label)
 				else:
-					self.plot_capture_ring(role, 'play', p.x, buff=True, label=label)
+					self.plot_capture_ring(role, 'play', p.x, buff=False, label=label)
 		if rotate: # target
 			self.ax.plot([0.5, 0.5], [-1.2, 1.2], 'k', label='target', zorder=100)
 		else:
@@ -155,14 +160,15 @@ class Plotter(object):
 		self.ax.set_aspect('equal')
 		self.ax.grid()
 		self.ax.set_axisbelow(True)
-		self.ax.tick_params(axis='both', which='major', labelsize=12)
-		plt.xlabel('x(m)', fontsize=12)
-		plt.ylabel('y(m)', fontsize=12)
+		self.ax.tick_params(axis='both', which='major', labelsize=15)
+		plt.xlabel('x(m)', fontsize=15)
+		plt.ylabel('y(m)', fontsize=15)
 		handles, labels = self.ax.get_legend_handles_labels()
 		handles.append(icon)
 		labels.append('capture rate')
 
-		plt.legend(handles, labels, prop={'size': 11}, ncol=3, loc='lower center')
+		plt.legend(handles, labels, prop={'size': 14}, ncol=3, loc='lower center', columnspacing=0.1,numpoints=1)
+		plt.subplots_adjust(left=0.15, right=0.95)
 		plt.show()
 
 	def get_data(self, fn, midx=0, midy=0, kx=1., ky=1., n=80):
@@ -288,6 +294,60 @@ class Plotter(object):
 		self.ax.plot(xs[:,0], xs[:,1], color=self.colors[player], linestyle=self.linestyles[situation], label=None)
 		self.ax.plot(xs[-1,0], xs[-1,1], 'o', color=self.colors[player], linestyle=self.linestyles[situation], label='_Hidden')
 
+
+	def plot_traj_compare(self, trajs, ratios):
+		
+		self.reset()
+		self.plot_target()
+		# icon_D0, = self.ax.plot([], [], 'o', color=self.colors['D0'], label='D0')
+		# icon_D1, = self.ax.plot([], [], 'o', color=self.colors['D1'], label='D1')
+		# icon_I, = self.ax.plot([], [], 'o', color=self.colors['I0'], label='I')
+		# legend_icons, legend_texts = [], []
+		maxr = max(ratios)*1.001
+		for i, (xs, ratio) in enumerate(zip(trajs, ratios)):
+			xs = self.game.rotate_to_exp(xs)
+			print(ratio/1.56)
+			for pid, px in xs.items():
+				if i < len(trajs)-1:
+					line, = self.ax.plot(px[:,0], px[:,1], color=self.colors[pid], label='a=%.1f'%(1/ratio), alpha=(ratio/maxr)**1.7, linestyle=(0, ((ratio-.6)*8, (ratio-.6)*3)))
+				else:
+					line, = self.ax.plot(px[:,0], px[:,1], color=self.colors[pid], label='a=%.1f'%(1/ratio), alpha=(ratio/maxr)**1.7, linestyle=(0, ()))
+				# self.ax.plot(px[:,0], px[:,1], color=self.colors[pid], label=None, alpha=(ratio*25/35)**2)
+				self.ax.plot(px[-1,0], px[-1,1], 'o', color=self.colors[pid], label=None, alpha=(ratio/maxr)**1.7)
+				self.ax.plot(px[0,0], px[0,1], 'x', color=self.colors[pid], label=None, alpha=(ratio/maxr)**1.7)
+				# legend_icon.append(line)
+				if 'D' in pid:
+					self.ax.plot(px[-1,0], px[-1,1], color=self.colors[pid])
+					# ring = Circle((px[-1,0], px[-1,1]), self.r, fc=self.colors[pid], ec=self.colors[pid], alpha=0.6*(ratio/1.2)**1.7, label=None)
+					# self.ax.add_patch(ring)
+					xrs, yrs = [], []
+					for t in np.linspace(0, 2*pi, 50):
+						xrs.append(px[-1,0] + self.r*cos(t))
+						yrs.append(px[-1,1] + self.r*sin(t))
+					self.ax.plot(xrs, yrs, color=self.colors[pid], alpha=(ratio/maxr)**1.7, linestyle=(0, ((ratio-.6)*8, (ratio-.6)*3)))
+			# legend_icons.append(tuple(legend_icon))
+			# legend_texts.append('a=%.1f'%ratio)
+		# print(legend_icons, legend_texts)
+		# plt.show()
+		line = [[(0, 0)]]
+		linestyles=[(0, ((ratio-.6)*8, (ratio-.6)*3)) for ratio in ratios]
+		linestyles[-1] = 'solid'
+		alphas = [(ratio/maxr)**1.7 for ratio in ratios]
+
+		lc1 = LineCollection(3*line, linestyles=[linestyles[0] for _ in range(3)], colors=['g', 'r', 'b'], alpha=alphas[0])
+		lc2 = LineCollection(3*line, linestyles=[linestyles[1] for _ in range(3)], colors=['g', 'r', 'b'], alpha=alphas[1])
+		lc3 = LineCollection(3*line, linestyles=[linestyles[2] for _ in range(3)], colors=['g', 'r', 'b'], alpha=alphas[2])
+		lc4 = LineCollection(3*line, linestyles=[linestyles[3] for _ in range(3)], colors=['g', 'r', 'b'], alpha=alphas[3])
+
+		plt.gca().legend([lc1, lc2, lc3, lc4], ['a=%.1f'%(1/ratio) for ratio in ratios], prop={'size': 13.5}, ncol=2, 
+							handletextpad=0.05, columnspacing=0.13, numpoints=1, 
+							handler_map={type(lc1): HandlerDashedLines()},
+							handlelength=1.8, borderpad=0.1,
+							loc='lower center')
+		self.show_plot()
+		# plt.gca().legend(legend_icons, legend_texts, prop={'size': 14}, ncol=3, handletextpad=0.05, columnspacing=0.13)
+		# self.ax.legend(legend_icons, legend_texts)
+
 	def plot_connect(self, p1, p2, xs1, xs2, skip=20):
 		n = xs1.shape[0]
 		for i, (x1, x2) in enumerate(zip(xs1, xs2)):
@@ -296,23 +356,27 @@ class Plotter(object):
 				self.ax.plot(x1[0], x1[1], 'o', color=self.colors[p1])
 				self.ax.plot(x2[0], x2[1], 'o', color=self.colors[p2])
 
-	def show_plot(self, fname=None):
+	def show_plot(self, fname=None, legend=False, lim=True):
 		# self.ax.axis('equal')
 		self.ax.grid()
-		self.ax.tick_params(axis='both', which='major', labelsize=12)
-		plt.xlabel('y(m)', fontsize=12)
-		plt.ylabel('x(m)', fontsize=12)
+		self.ax.tick_params(axis='both', which='major', labelsize=15)
+		plt.xlabel('y(m)', fontsize=15)
+		plt.ylabel('x(m)', fontsize=15)
 		plt.xticks([-0.5, 0, 0.5], [0.5, 0, -0.5])
 		# self.ax.xaxis.set_major_locator(ticker.FixedLocator([-0.4, 0, 0.4]))
 		
 		# for lbl in plt.xticks()[1]:
 		# 	print(lbl)
 		# print(plt.xticks()[0])
-		plt.gca().legend(prop={'size': 11}, ncol=3, handletextpad=0.1)
+		if legend is True:
+			plt.gca().legend(prop={'size': 14}, ncol=3, handletextpad=0.05, columnspacing=0.13)
+		plt.subplots_adjust(bottom=0.13)
 		print('set legend')
 		self.ax.set_aspect('equal')
-		self.ax.set_xlim(self.xlim)
-		self.ax.set_ylim(self.ylim)
+		# self.ax.set_xlim(self.xlim)
+		# self.ax.set_ylim(self.ylim)
+		self.ax.set_xlim([-.9, .7])
+		self.ax.set_ylim([-1.28, .99])
 
 		if fname is not None:
 			self.fig.savefig(self.game.res_dir+fname, bbox_inches='tight')
@@ -493,6 +557,8 @@ class Plotter(object):
 		a_sim = np.ones(n)*(self.game.a)
 
 		fig, axs = plt.subplots(3, 1)
+		for ax in axs:
+			ax.tick_params(axis='both', which='major', labelsize=15.6)
 		for j, t in enumerate(ts):
 			xi = self.game.players['I0'].exp.x(t)
 			yi = self.game.players['I0'].exp.y(t)
@@ -508,6 +574,8 @@ class Plotter(object):
 				vx = player.exp.vx(t)
 				vy = player.exp.vy(t)
 				v = np.sqrt(vx**2 + vy**2)
+				# if 'D' in role and v < 0.245:
+				# 	v = 0.25
 				vs[role][j] = v
 				if 'I' in role:
 					ps[j] = int(player.exp.fp(t))
@@ -527,24 +595,25 @@ class Plotter(object):
 
 		axs[2].plot(ts, ps, color='k')
 
-		axs[0].set_ylabel('velocity(m/s)')
-		axs[1].set_ylabel('distance(m)')
-		axs[2].set_ylabel('policy')
-		plt.sca(axs[2])
+		axs[0].set_ylabel('velocity(m/s)', fontsize=15.6)
+		axs[1].set_ylabel('distance(m)', fontsize=15.6)
+		axs[2].set_ylabel('policy', fontsize=15.6)
 		plt.yticks([-1, 0, 1, 2], ('both', 'D0/D1', 'DR', 'target'))
-		axs[1].set_xlabel('time(s)')
+		axs[-1].set_xlabel('time(s)', fontsize=15.6)
 		# axs[2].set_ylabel('a')
 		axs[0].set_ylim(0.24, 0.28)
-		# axs[1].set_ylim(0.245, 0.254)
+		# axs[0].set_ylim(0.23, 0.26)
 		# axs[2].set_ylim(0.99, 1.1)
-		trange = (13.5, 17.2)
+		trange = (15.9, 20.2)
 		axs[0].set_xlim(trange)
 		axs[1].set_xlim(trange)
 		# axs[2].set_xlim(trange)
 		for ax in axs:
 			ax.grid(True)
-			ax.legend(ncol=2)
+			ax.legend(ncol=3, prop={'size': 13}, handletextpad=0.05, columnspacing=0.13, numpoints=2)
+
 		fig.tight_layout()
+		plt.subplots_adjust(right=0.96)
 		plt.show()
 
 	def reset(self):

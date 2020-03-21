@@ -4,22 +4,36 @@ from math import acos
 from Games import FastDgame, SlowDgame
 from geometries import LineTarget, CircleTarget
 
+def play_a_game(xd0, xi, xd1, param_file='traj_param_tst0.csv'):
+	# game = FastDgame(LineTarget())
+	game = SlowDgame(LineTarget())
+	x0 = {'D0': xd0, 'I0': xi, 'D1': xd1}
+	game.reset(x0)
+	# game.record_data(x0, file=param_file)
+
+	ts_play, xs_play, _ = game.advance(8.)
+	fname = '_'.join([strategy for role, strategy in game.pstrategy.items()])
+	figid = param_file.split('.')[0].split('_')[-1]
+	game.plotter.plot(xs={'play': xs_play}, geox='play', ps=game.pstrategy, traj=True, fname='traj_'+fname+'_'+figid+'.png')
+
+
 def play_fastD_game(xd0, xi, xd1, ni=1, nd=2, param_file='traj_param_100.csv'):
 	game = FastDgame(LineTarget())
 	x0 = {'D0': xd0, 'I0': xi, 'D1': xd1}
 	game.reset(x0)
 	game.record_data(x0, file=param_file)
 
-	ts_play, xs_play = game.advance(8.)
+	ts_play, xs_play, _ = game.advance(8.)
 	fname = '_'.join([strategy for role, strategy in game.pstrategy.items()])
 	figid = param_file.split('.')[0].split('_')[-1]
-	game.plotter.plot(xs={'play': xs_play}, geox='play', ps=game.pstrategy, traj=True, dcontour=True, fname='traj_'+fname+'_'+figid+'.png')
+	# game.plotter.plot(xs={'play': xs_play}, geox='play', ps=game.pstrategy, traj=True, fname='traj_'+fname+'_'+figid+'.png')
+	game.plotter.plot(xs={'play': xs_play}, geox='play', ps=game.pstrategy, traj=True)
 
-def generate_data_for_exp(S, T, gmm, D, delta, offy=0.2, ni=1, nd=2, param_file='traj_param_100.csv'):
+def generate_data_for_exp(S, T, gmm, D, delta, offy=0.2, ni=1, nd=2, param_file='traj_param_test.csv'):
 	game = SlowDgame(LineTarget())
 	xs_ref = game.generate_analytic_traj(S, T, gmm, D, delta, offy=offy, file=param_file)
 	game.reset({'D0': xs_ref['D0'][0,:], 'I0': xs_ref['I0'][0,:], 'D1': xs_ref['D1'][0,:]})
-	ts, xs_play = game.advance(8.)
+	ts, xs_play, _ = game.advance(10.)
 
 	# for role in xs_ref:
 	# 	xs_ref[role] = game.rotate_to_exp(xs_ref[role])
@@ -27,7 +41,8 @@ def generate_data_for_exp(S, T, gmm, D, delta, offy=0.2, ni=1, nd=2, param_file=
 
 	fname = '_'.join([strategy for role, strategy in game.pstrategy.items()])
 	figid = param_file.split('.')[0].split('_')[-1]
-	game.plotter.plot(xs=xplot, geox='play', ps=game.pstrategy, traj=True, fname='traj_'+fname+'_'+figid+'.png')
+	game.plotter.plot(xs=xplot, geox='play', ps=game.pstrategy, traj=True)
+	# game.plotter.plot(xs=xplot, geox='play', ps=game.pstrategy, traj=True, fname='traj_'+fname+'_'+figid+'.png')
 
 def replay_exp(res_dir='res1/', ni=1, nd=2):
 	x0s = dict()
@@ -66,8 +81,9 @@ def replay_exp(res_dir='res1/', ni=1, nd=2):
 if __name__ == '__main__':
 
 	# t0 = time.clock()
-	# generate_data_for_exp(-.98, 2.5, acos(25/27)+0.5, 0, 0.3, param_file='traj_param_sd0.csv')
+	# generate_data_for_exp(-.89, 2.8, acos(25/27)+0.5, 0.1, 0.3999999, param_file='traj_param_append01.csv')
 	# play_fastD_game(np.array([-.85, 0.2]), np.array([-0.2, 0.4]), np.array([.85, 0.2]), param_file='traj_param_tst0.csv')
+	# play_a_game(np.array([-.85, 0.2]), np.array([-0.2, 0.6]), np.array([.85, 0.2]), param_file='traj_param_tst0.csv')
 
 	# replay_exp(res_dir='resfd24002/')
 	# replay_exp(res_dir='resfd25001/')
@@ -77,9 +93,10 @@ if __name__ == '__main__':
 	# t1 = time.clock()
 	# print(t1 - t0)
 	# game = FastDgame(LineTarget(), exp_dir='ressd26002/')
-	# game = SlowDgame(LineTarget(), exp_dir='ressd034/')
+	game = FastDgame(LineTarget(), exp_dir='ressd032/')
+	# game = SlowDgame(LineTarget(), exp_dir='resfd24002/')
 	# game.players['D0'].x = np.array([-0.85, 0.2])
 	# game.players['D1'].x = np.array([ 0.85, 0.2])
-	# game.plotter.plot_barrier(dr='fd')
+	game.plotter.plot_barrier(dr='fd')
 	
 	# game.plotter.plot_velocity()

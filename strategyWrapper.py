@@ -44,7 +44,7 @@ def closeWrapper(dstrategy, istrategy):
 		vs = args[0].get_velocity()
 		# print(args[0].last_act)
 		if (get_norm(D1_I) < args[0].r_close and get_norm(D2_I) < args[0].r_close) or args[0].last_act['p_I0'] == 'both close':  # in both range
-			# print('both close')
+			# print('both close', get_norm(D1_I), get_norm(D2_I))
 			vD1 = np.concatenate((vs['D0'], [0]))
 			phi_1 = atan2(np.cross(D1_I, vD1)[-1], np.dot(D1_I, vD1))
 			phi_1 = args[0].k_close*phi_1 + base['D0']

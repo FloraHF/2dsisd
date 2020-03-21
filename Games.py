@@ -85,7 +85,7 @@ class BaseGame(object):
 		self.a = self.vd/self.vi
 		# self.gmm0 = acos(self.a)
 		self.gmm = acos(min(self.a, 1))
-		self.dt = 0.2
+		self.dt = 0.02
 		self.ni = ni
 		self.nd = nd
 		self.policy_dict = {'pt': self.pt_strategy,
@@ -108,6 +108,24 @@ class BaseGame(object):
 
 		self.plotter = Plotter(self, target, self.a, self.r)
 		# def strategy(self, xs, dstrategy=m_strategy, istrategy=m_strategy):
+
+	def set_vi(self, vi):
+		self.vi = vi
+		for r, p in self.players.items():
+			if 'I' in r:
+				p.v_max = vi
+		self.a = self.vd/self.vi
+		print('seting the fucking aaaaaaaaaaaaaaaa', self.a, self.vi, self.vd)
+		self.gmm = acos(min(self.a, 1))
+
+
+	def set_vd(self, vd):
+		self.vd = vd
+		for r, p in self.players.items():
+			if 'D' in r:
+				p.v_max = vd
+		self.a = self.vd/self.vi
+		self.gmm = acos(min(self.a, 1))				
 
 	def read_data(self, file):
 		with open(file, 'r') as f:
@@ -182,6 +200,7 @@ class BaseGame(object):
 		return sol.x
 
 	def pt_strategy(self, xs):
+		print('ppppppppppppppppppppppt')
 		xt = self.projection_on_target(xs['I0'])
 		P = np.concatenate((xt, [0]))
 		I_P = np.concatenate((xt - xs['I0'], [0]))
@@ -201,6 +220,7 @@ class BaseGame(object):
 		return actions
 
 	def pp_strategy(self, xs):
+		print('pppppppppppppppppppppp')
 		xt = self.projection_on_target(xs['I0'])
 		P = np.concatenate((xt, [0]))
 		I_P = np.concatenate((xt - xs['I0'], [0]))
@@ -220,6 +240,7 @@ class BaseGame(object):
 		return actions
 
 	def step(self, xs):
+		# print(self.a)
 		actions = self.strategy(self, xs)
 		# print(actions)
 		aacts = ''
@@ -303,16 +324,18 @@ class BaseGame(object):
 	def reset(self, xs):
 		for role, p in self.players.items():
 			p.reset(xs[role])
-
+			self.last_act['p_'+role] = ''		
 
 class SlowDgame(BaseGame):
 	"""docstring for SlowDgame"""
 	def __init__(self, target, exp_dir=None, sim_dir=None, policy_dir='PolicyFn', ni=1, nd=2):
 		super(SlowDgame, self).__init__(target, exp_dir=exp_dir, sim_dir=sim_dir, ni=ni, nd=nd)
+		# print('!!!!!!!!!!!!!! fucking SlowDgame !!!!!!!!!!!!!!!')
 
 		self.policies = dict()
 		for role, p in self.players.items():
 			self.policies[role] = load_model('Policies/'+policy_dir+'_'+role+'.h5')
+		# print(self.a)
 		self.s_lb = -asin(self.a)
 		self.gmm_lb = acos(self.a)
 		self.analytic_traj = Envelope(self.vi, self.vd, self.r)
@@ -430,6 +453,7 @@ class SlowDgame(BaseGame):
 		return d1, d2, a1, a2
 
 	def w_strategy(self, xs):
+		# print('wwwwwwwwwwwwwwww')
 		D1_I, D2_I, D1_D2 = self.get_vecs(xs)
 		base = self.get_base(D1_I, D2_I, D1_D2)
 		d1, d2, a1, a2 = self.get_alpha(D1_I, D2_I, D1_D2)
@@ -459,6 +483,7 @@ class SlowDgame(BaseGame):
 		return acts
 
 	def deepest_in_target(self, xs):
+		# print('deeeeeeeeeeeeeeeeeeeeeeeeeeepest')
 		D1_I, D2_I, D1_D2 = self.get_vecs(xs)
 		x, y, z = self.get_xyz(D1_I, D2_I, D1_D2)
 
@@ -516,6 +541,7 @@ class SlowDgame(BaseGame):
 
 	@Iwin_wrapper
 	def f_strategy(self, xs):
+		# print('fffffffffffffffffffff')
 		D1_I, D2_I, D1_D2 = self.get_vecs(xs)
 		base = self.get_base(D1_I, D2_I, D1_D2)
 		x, y, z = self.get_xyz(D1_I, D2_I, D1_D2)
@@ -566,6 +592,7 @@ class SlowDgame(BaseGame):
 
 	@Iwin_wrapper
 	def h_strategy(self, xs):
+		# print('hhhhhhhhhhhhhhhhhhh')
 		D1_I, D2_I, D1_D2 = self.get_vecs(xs)
 		base = self.get_base(D1_I, D2_I, D1_D2)
 		x, y, z = self.get_xyz(D1_I, D2_I, D1_D2)
@@ -626,6 +653,7 @@ class SlowDgame(BaseGame):
 class FastDgame(BaseGame):
 	"""docstring for FastDgame"""
 	def __init__(self, target, ni=1, nd=2, exp_dir=None, sim_dir=None):
+		# print('!!!!!!!!!!!!!! fucking FastDgame !!!!!!!!!!!!!!!')
 		super(FastDgame, self).__init__(target, exp_dir=exp_dir, sim_dir=sim_dir, ni=ni, nd=nd)
 		self.strategy = mixWrapper(self.policy_dict[self.dstrategy], self.policy_dict[self.istrategy])
 

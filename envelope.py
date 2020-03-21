@@ -53,6 +53,8 @@ class Envelope(object):
 		return vxd, vyd, vxi, vyi
 
 	def envelope_core(self, s):
+
+		# print('!!!!!!!!!!!!!!core')
 		beta = asin(1/self.w)
 		A = self.r*self.w/(self.w**2 - 1)
 		B = self.r*self.w/sqrt(self.w**2 - 1)

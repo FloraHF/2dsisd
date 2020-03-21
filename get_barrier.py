@@ -133,5 +133,6 @@ def get_sim_barrier():
 
 	return xbs, ybs
 
-get_exp_barrier()
+
+# get_exp_barrier()
 get_sim_barrier()
